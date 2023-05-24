@@ -9,6 +9,20 @@ This appliance runs in the same manner as version 3. It uses Docker containers t
 * The services still call shell scripts, but they have been modularized.
 * dnscrypt-proxy is installed for encrypted DNS resolution
 
+## Boot up process
+
+Overview of what happens on boot up:
+
+1. Service warrior4-appliance-display is started.
+2. Service warrior4-appliance is started.
+3. Containers (watchtower, watchtower run-once, warrior) are created if they do not exist.
+4. Containers are updated using watchtower run-once.
+5. Containers watchtower and warrior are started.
+6. Wait for the warrior web interface to start up.
+7. If steps 3 to 6 fail, they are retried or the system is rebooted.
+8. Monitor the warrior container for reboot or poweroff.
+9. If step 8 fails, they are retried or the system is rebooted.
+
 ## Building the appliance
 
 Building the appliance is a two step process. Scripts are provided that does mostly everything automatically. A network connection is required as additional software needs to be downloaded.
