@@ -3,3 +3,7 @@
 
 # Disk images and virtual appliance output
 /output/
+
+# Binaries that get copied to the skeleton directory
+appliance/skeleton/usr/bin/warrior4-appliance
+appliance/skeleton/usr/bin/warrior4-appliance-display
