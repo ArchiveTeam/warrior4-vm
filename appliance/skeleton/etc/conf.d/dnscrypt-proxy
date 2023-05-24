@@ -1,0 +1,8 @@
+# Default service options for dnscrypt-proxy on warrior appliance
+
+#DNSCRYPT_OPTS="-config /etc/dnscrypt-proxy/dnscrypt-proxy.toml"
+#DNSCRYPT_USER="dnscrypt"
+#DNSCRYPT_GROUP="dnscrypt"
+
+# Allow binding to privileged port 53
+DNSCRYPT_USER="root"

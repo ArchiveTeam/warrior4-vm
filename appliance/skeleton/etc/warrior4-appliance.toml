@@ -1,0 +1,48 @@
+## Configuration for the warrior4-appliance service
+
+## Path to a file where logging messages are written
+log_path = "/var/log/warrior4-appliance.log"
+
+## Path to a file where state is written
+state_path = "/var/lib/warrior4-appliance.state"
+
+## Address of warrior4-appliance-display TCP socket for IPC
+display_ipc_address = "127.0.0.1:40100"
+
+## URL of an executable/script to be downloaded and run on boot up for live patching
+# patch_script_url = ""
+
+## Name of the Watchtower container
+watchtower_name = "watchtower"
+## Path of an executable/script to be run to create the Watchtower container
+watchtower_creator = "/usr/lib/warrior4-appliance/watchtower-create.sh"
+
+## Name of the Watchtower container with --run-once
+watchtower_run_once_name = "watch-once-tower"
+## Path of an executable/script to be run to create the Watchtower container with --run-once
+watchtower_run_once_creator = "/usr/lib/warrior4-appliance/watchtower-run-once-create.sh"
+
+## Name of the Warrior project management container (the payload container)
+payload_name = "warrior"
+## Path of an executable/script to be run to create the payload container
+payload_creator = "/usr/lib/warrior4-appliance/payload-create.sh"
+## Path of an executable/script to be run before the payload container is started
+payload_pre_start = "/usr/lib/warrior4-appliance/payload-pre-start.sh"
+## Path of an executable/script to be run after the payload container is started
+payload_post_start = "/usr/lib/warrior4-appliance/payload-post-start.sh"
+## Path of an executable/script that waits until the payload container is ready to be accessed by the user
+payload_wait_ready = "/usr/lib/warrior4-appliance/payload-wait-ready.sh"
+## Path of an executable/script that checks if the payload container wants a reboot (exit code 0 = yes; other = no)
+payload_reboot_check = "/usr/lib/warrior4-appliance/payload-reboot-check.sh"
+## Path of an executable/script that checks if the payload container wants a shutdown (exit code 0 = yes; other = no)
+payload_poweroff_check = "/usr/lib/warrior4-appliance/payload-poweroff-check.sh"
+
+## Message to show when the payload container is ready
+payload_ready_message = """The warrior has successfully started up.
+
+To manage your warrior, open your web browser and login to the web interface at
+
+    http://127.0.0.1:8001
+
+Advanced information: press the Esc key to access the menu.
+"""

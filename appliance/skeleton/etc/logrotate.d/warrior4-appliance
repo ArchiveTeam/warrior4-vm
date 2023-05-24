@@ -1,0 +1,8 @@
+# log rotation for warrior4-appliance service
+
+/var/log/warrior4-appliance.log {
+    rotate 9
+    daily
+    compress
+    copytruncate
+}

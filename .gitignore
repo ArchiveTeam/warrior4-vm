@@ -1,0 +1,5 @@
+# Rust output
+/target/
+
+# Disk images and virtual appliance output
+/output/

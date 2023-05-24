@@ -1,0 +1,6 @@
+#!/sbin/openrc-run
+
+command=/usr/bin/warrior4-appliance-display
+command_args="--vt 1"
+command_background=true
+pidfile=/var/run/warrior4-appliance-display.pid

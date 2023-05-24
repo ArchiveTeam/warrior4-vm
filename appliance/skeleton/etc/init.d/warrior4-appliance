@@ -1,0 +1,9 @@
+#!/sbin/openrc-run
+
+command=/usr/bin/warrior4-appliance
+command_background=true
+pidfile=/var/run/warrior4-appliance.pid
+
+depend() {
+    after net docker warrior4-appliance-display
+}

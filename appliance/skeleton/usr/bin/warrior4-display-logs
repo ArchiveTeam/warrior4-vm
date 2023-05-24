@@ -1,0 +1,11 @@
+#!/bin/sh
+# Used for showing logs on tty2 to diagnose virtual appliance bugs
+
+set -e
+
+echo "Now showing Warrior 4 logs"
+
+tail -F \
+    /var/log/messages \
+    /var/log/docker.log \
+    /var/log/warrior4-appliance.log

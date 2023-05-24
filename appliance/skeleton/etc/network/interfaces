@@ -1,0 +1,4 @@
+# network configuration for warrior appliance
+# https://wiki.alpinelinux.org/wiki/Configure_Networking
+iface lo inet loopback
+iface eth0 inet dhcp
