@@ -29,6 +29,8 @@ impl Manager {
     }
 
     pub fn run(&mut self) -> anyhow::Result<()> {
+        self.wait_for_docker()?;
+
         match self.run_init_steps_loop() {
             Ok(_) => {
                 tracing::debug!("run init steps completed")
@@ -133,6 +135,27 @@ impl Manager {
 
         self.monitor_containers()
             .context("monitoring the containers failed")?;
+
+        Ok(())
+    }
+
+    fn wait_for_docker(&self) -> anyhow::Result<()> {
+        tracing::info!("wait for docker");
+        self.update_progress("Waiting for Docker to be ready", 0);
+
+        loop {
+            let mut command = Command::new("docker");
+            command.arg("version");
+
+            let output = crate::logging::log_command_output(&mut command)?;
+
+            if output.status.success() {
+                break;
+            }
+
+            tracing::debug!("sleep for docker");
+            std::thread::sleep(Duration::from_secs(5));
+        }
 
         Ok(())
     }
