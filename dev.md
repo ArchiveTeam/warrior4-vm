@@ -47,9 +47,9 @@ Packaging the virtual machine requires VirtualBox for use of its utilities.
 
 These steps have been tested using VirtualBox 7 installed on Ubuntu.
 
-You don't need to do this step in a virtual machine, but the script does temporarily register a machine. If you do run VirtualBox in a virtual machine, you'll need to enable nested virtualization for your hypervisor.
+(You don't need to do this step in a virtual machine, but the script does temporarily register a machine. If you do run VirtualBox in a virtual machine, you'll need to enable nested virtualization for your hypervisor.)
 
-If you are setting up on a physical machine that is already running another virtual machine solution, note that running more than one hypervisor at a time may not be possible. You might get an error when you attempt to boot a VirtualBox machine.
+(If you are setting up on a physical machine that is already running another virtual machine solution, note that running more than one hypervisor at a time may not be possible. You might get an error when you attempt to boot a VirtualBox machine.)
 
 Ensure the vdi file from the previous is in the `output` directory.
 

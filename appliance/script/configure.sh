@@ -1,4 +1,6 @@
 #!/bin/sh
+# This script is run by the Alpine image creator script at the end of the
+# install process.
 
 set -e
 set -x
@@ -29,6 +31,8 @@ rc-update add docker default
 
 chmod 755 /etc/init.d/warrior4-appliance
 chmod 755 /etc/init.d/warrior4-appliance-display
+chmod 755 /usr/bin/warrior4-display-logs
+chmod 755 /usr/lib/warrior4-appliance/*.sh
 rc-update add warrior4-appliance default
 rc-update add warrior4-appliance-display default
 

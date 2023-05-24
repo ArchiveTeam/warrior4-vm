@@ -124,7 +124,7 @@ fn add_info(cursive: &mut Cursive) {
 
 /// Add the help menu item
 fn add_help(cursive: &mut Cursive) {
-    static HELP_TEXT: &str = "Tip: Press the Host Key (right Ctrl key) to toggle keyboard capture.";
+    static HELP_TEXT: &str = "Tip: If can't get out of the virtual machine, press the Host Key (right Ctrl key) to toggle keyboard capture.";
 
     cursive.menubar().add_leaf("Help", |c| {
         c.add_layer(

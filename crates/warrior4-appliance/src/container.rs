@@ -25,17 +25,17 @@ pub fn get_container_status<S: AsRef<str>>(name: S) -> String {
 }
 
 pub fn run_container_foreground<S: AsRef<str>>(name: S) -> anyhow::Result<(Output, Output)> {
-    let mut command = Command::new("docker");
-    command.arg("start").arg(name.as_ref());
+    let mut start_command = Command::new("docker");
+    start_command.arg("start").arg(name.as_ref());
 
-    let output = crate::logging::log_command_output(&mut command)?;
+    let start_output = crate::logging::log_command_output(&mut start_command)?;
 
-    let mut command2 = Command::new("docker");
-    command.arg("wait").arg(name.as_ref());
+    let mut wait_command = Command::new("docker");
+    wait_command.arg("wait").arg(name.as_ref());
 
-    let output2 = crate::logging::log_command_output(&mut command2)?;
+    let wait_output = crate::logging::log_command_output(&mut wait_command)?;
 
-    Ok((output, output2))
+    Ok((start_output, wait_output))
 }
 
 pub fn start_container<S: AsRef<str>>(name: S) -> anyhow::Result<Output> {
