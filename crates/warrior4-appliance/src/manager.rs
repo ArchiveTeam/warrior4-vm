@@ -33,6 +33,7 @@ impl Manager {
     /// Start up, monitor the system and containers
     pub fn run(&mut self) -> anyhow::Result<()> {
         self.wait_for_docker()?;
+        self.wait_for_internet_connection()?;
 
         match self.init_system_with_retry() {
             Ok(_) => {
@@ -290,6 +291,28 @@ impl Manager {
         tracing::info!("saving state");
 
         self.state.save(&self.config.state_path)?;
+
+        Ok(())
+    }
+
+    /// Wait for an internet connection
+    fn wait_for_internet_connection(&self) -> anyhow::Result<()> {
+        tracing::info!("wait for internet connection");
+        self.update_progress("Waiting for internet connection", 0);
+
+        loop {
+            let mut command = Command::new("ping");
+            command.arg("warriorhq.archiveteam.org").arg("-c").arg("1");
+
+            let output = crate::logging::log_command_output(&mut command)?;
+
+            if output.status.success() {
+                break;
+            }
+
+            tracing::debug!("sleep for internet connection");
+            std::thread::sleep(Duration::from_secs(5));
+        }
 
         Ok(())
     }
