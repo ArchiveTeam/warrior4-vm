@@ -32,6 +32,9 @@ pub struct AppConfig {
     pub payload_reboot_check: PathBuf,
     pub payload_poweroff_check: PathBuf,
     pub payload_ready_message: String,
+
+    pub reboot_on_payload_exit_error: bool,
+    pub reboot_on_payload_unhealthy: bool,
 }
 
 /// Deserialize the config from the given path

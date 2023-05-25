@@ -46,3 +46,8 @@ To manage your warrior, open your web browser and login to the web interface at
 
 Advanced information: press the Esc key to access the menu.
 """
+
+## Whether to reboot when the payload exits with an application error exit code
+reboot_on_payload_exit_error = true
+## Whether to reboot when the payload container has an unhealthy status
+reboot_on_payload_unhealthy = true

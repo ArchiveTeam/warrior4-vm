@@ -502,32 +502,49 @@ impl Manager {
         // * Watchtower may be updating it
         // * the check reboot or check poweroff scripts aren't working correctly
         // * the user stopped it
-        // https://docs.docker.com/engine/reference/run/#exit-status
-
-        let status = crate::container::get_container_status(&self.config.payload_name);
-        let exit_code =
-            crate::container::get_container_exit_code(&self.config.payload_name).unwrap_or(0);
-        let finished_at = crate::container::get_container_finished_at(&self.config.payload_name)
-            .unwrap_or(chrono::Utc::now());
-        tracing::trace!(status, exit_code, %finished_at, "monitor payload status");
-
-        if status != "exited" {
-            return Ok(());
-        }
-
-        if !(1..=124).contains(&exit_code) {
-            return Ok(());
-        }
+        // * the container ignores errors and does not return a useful exit code
 
         if !self.payload_crashed
-            && chrono::Utc::now() - finished_at > chrono::Duration::seconds(300)
+            && self.check_payload_has_exited_error()?
+            && self.config.reboot_on_payload_exit_error
         {
             self.payload_crashed = true;
-            tracing::warn!(status, exit_code, "payload container appears crashed");
+            tracing::warn!("payload container appears crashed");
             self.reboot_due_to_error("The container unexpectedly stopped")?;
+        } else if !self.payload_crashed
+            && self.check_payload_is_unhealthy()?
+            && self.config.reboot_on_payload_unhealthy
+        {
+            self.payload_crashed = true;
+            tracing::warn!("payload container appears unhealthy");
+            self.reboot_due_to_error("The container stopped responding")?;
         }
 
         Ok(())
+    }
+
+    /// Check if the container exited with application error
+    fn check_payload_has_exited_error(&mut self) -> anyhow::Result<bool> {
+        let status = crate::container::get_container_status(&self.config.payload_name);
+        let exit_code =
+            crate::container::get_container_exit_code(&self.config.payload_name).unwrap_or(0);
+
+        tracing::trace!(status, exit_code, "check payload status");
+
+        // https://docs.docker.com/engine/reference/run/#exit-status
+
+        Ok(status == "exited" && (1..=124).contains(&exit_code))
+    }
+
+    /// Check if the container is unhealthy
+    fn check_payload_is_unhealthy(&mut self) -> anyhow::Result<bool> {
+        let status = crate::container::get_container_status(&self.config.payload_name);
+        let health =
+            crate::container::get_container_health(&self.config.payload_name).unwrap_or_default();
+
+        tracing::trace!(status, health, "check payload health");
+
+        Ok(status == "running" && health == "unhealthy")
     }
 
     /// Returns whether the payload is requesting a machine restart
