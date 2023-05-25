@@ -325,7 +325,7 @@ impl Manager {
         tracing::debug!(status_code = %response.status(), "patch file response");
 
         if !response.status().is_success() {
-            anyhow::bail!("download patch file failed");
+            anyhow::bail!("download patch file failed: {}", response.status());
         }
 
         let mut patch_file = std::fs::File::options()
