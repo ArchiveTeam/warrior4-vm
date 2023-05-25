@@ -50,3 +50,18 @@ pub fn log_command_output(command: &mut Command) -> anyhow::Result<Output> {
 
     Ok(output)
 }
+
+pub fn trace_command_output(command: &mut Command) -> anyhow::Result<Output> {
+    let program = command.get_program().to_owned();
+    let args = command
+        .get_args()
+        .map(|s| s.to_owned())
+        .collect::<Vec<OsString>>();
+    let output = command.output()?;
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    tracing::trace!(?program, ?args, %stderr, %stdout, exit_status = %output.status, "command output");
+
+    Ok(output)
+}

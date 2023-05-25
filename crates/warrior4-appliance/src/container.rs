@@ -15,7 +15,7 @@ pub fn get_container_status<S: AsRef<str>>(name: S) -> String {
         match result {
             Ok(output) => output,
             Err(error) => {
-                tracing::debug!(%error, "get container status");
+                tracing::debug!(?error, "get container status");
                 return String::new();
             }
         }

@@ -27,7 +27,7 @@ fn main() -> anyhow::Result<()> {
     match wrapped_main() {
         Ok(_) => Ok(()),
         Err(error) => {
-            tracing::error!(%error);
+            tracing::error!(?error);
             Err(error)
         }
     }

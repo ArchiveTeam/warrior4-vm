@@ -37,7 +37,7 @@ impl Manager {
             }
             Err(error) => {
                 tracing::debug!("run init steps failed");
-                self.reboot_due_to_error(error.to_string())?;
+                self.reboot_due_to_error(format!("{:#}", error))?;
             }
         }
 
@@ -47,7 +47,7 @@ impl Manager {
             }
             Err(error) => {
                 tracing::debug!("run monitor steps failed");
-                self.reboot_due_to_error(error.to_string())?;
+                self.reboot_due_to_error(format!("{:#}", error))?;
             }
         }
 
@@ -63,8 +63,9 @@ impl Manager {
                     return Ok(());
                 }
                 Err(error) => {
-                    tracing::error!(%error, "run init steps error");
-                    let error_message = format!("A problem occurred during start up\n\n{}", error);
+                    tracing::error!(?error, "run init steps error");
+                    let error_message =
+                        format!("A problem occurred during start up\n\n{:#}", error);
 
                     let sleep_time = 60 * 2u64.pow(index);
                     tracing::info!(sleep_time, "sleeping");
@@ -82,8 +83,8 @@ impl Manager {
         self.load_state().context("loading system state failed")?;
 
         if let Err(error) = self.patch_system().context("patching the system failed") {
-            tracing::warn!(%error, "skipping patch system");
-            self.update_progress(format!("{}", error), 0);
+            tracing::warn!(?error, "skipping patch system");
+            self.update_progress(format!("{:#}", error), 0);
             std::thread::sleep(Duration::from_secs(5));
         }
 
@@ -94,8 +95,8 @@ impl Manager {
             .update_containers()
             .context("updating the containers failed")
         {
-            tracing::warn!(%error, "skipping updating containers");
-            self.update_progress(format!("{}", error), 0);
+            tracing::warn!(?error, "skipping updating containers");
+            self.update_progress(format!("{:#}", error), 0);
             std::thread::sleep(Duration::from_secs(5));
         }
 
@@ -117,7 +118,7 @@ impl Manager {
                     return Ok(());
                 }
                 Err(error) => {
-                    tracing::error!(%error, "run monitor steps error");
+                    tracing::error!(?error, "run monitor steps error");
                     let error_message = format!("A problem occurred\n\n{}", error);
 
                     let sleep_time = 60 * 2u64.pow(index);
@@ -217,14 +218,14 @@ impl Manager {
     fn update_progress<S: Into<String>>(&self, text: S, percent: u8) {
         match self.display_ipc.send_progress(text, percent) {
             Ok(_) => {}
-            Err(error) => tracing::error!(%error, "display ipc error"),
+            Err(error) => tracing::error!(?error, "display ipc error"),
         }
     }
 
     fn update_ready<S: Into<String>>(&self, text: S) {
         match self.display_ipc.send_ready(text) {
             Ok(_) => {}
-            Err(error) => tracing::error!(%error, "display ipc error"),
+            Err(error) => tracing::error!(?error, "display ipc error"),
         }
     }
 
@@ -442,14 +443,14 @@ impl Manager {
 
     fn payload_wants_reboot(&self) -> anyhow::Result<bool> {
         let mut command = Command::new(&self.config.payload_reboot_check);
-        let output = crate::logging::log_command_output(&mut command)?;
+        let output = crate::logging::trace_command_output(&mut command)?;
 
         Ok(output.status.success())
     }
 
     fn payload_wants_poweroff(&self) -> anyhow::Result<bool> {
         let mut command = Command::new(&self.config.payload_poweroff_check);
-        let output = crate::logging::log_command_output(&mut command)?;
+        let output = crate::logging::trace_command_output(&mut command)?;
 
         Ok(output.status.success())
     }

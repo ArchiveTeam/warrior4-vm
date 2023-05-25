@@ -207,7 +207,7 @@ fn generate_info_text() -> String {
 
         match command.output() {
             Ok(output) => text.push_str(&String::from_utf8_lossy(&output.stdout)),
-            Err(error) => text.push_str(&error.to_string()),
+            Err(error) => text.push_str(&format!("{:#}", error)),
         }
 
         text.push_str("\n\n");
