@@ -15,13 +15,31 @@ pub fn get_container_status<S: AsRef<str>>(name: S) -> String {
         match result {
             Ok(output) => output,
             Err(error) => {
-                tracing::debug!(?error, "get container status");
+                tracing::trace!(?error, "get container status");
                 return String::new();
             }
         }
     };
 
     String::from_utf8_lossy(&output.stdout).trim().to_string()
+}
+
+pub fn get_container_exit_code<S: AsRef<str>>(name: S) -> Option<u32> {
+    let result = Command::new("docker")
+        .arg("inspect")
+        .arg("--type=container")
+        .arg("--format")
+        .arg("{{.State.ExitCode}}")
+        .arg(name.as_ref())
+        .output();
+
+    match result {
+        Ok(output) => String::from_utf8_lossy(&output.stdout).trim().parse().ok(),
+        Err(error) => {
+            tracing::trace!(?error, "get container exit code");
+            None
+        }
+    }
 }
 
 pub fn run_container_foreground<S: AsRef<str>>(name: S) -> anyhow::Result<(Output, Output)> {

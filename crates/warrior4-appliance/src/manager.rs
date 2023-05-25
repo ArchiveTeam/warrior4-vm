@@ -15,6 +15,7 @@ pub struct Manager {
     config: AppConfig,
     state: State,
     display_ipc: DisplayIPC,
+    payload_crashed: bool,
 }
 
 impl Manager {
@@ -25,9 +26,11 @@ impl Manager {
             config,
             state,
             display_ipc,
+            payload_crashed: false,
         }
     }
 
+    /// Main loop
     pub fn run(&mut self) -> anyhow::Result<()> {
         self.wait_for_docker()?;
 
@@ -56,6 +59,7 @@ impl Manager {
         Ok(())
     }
 
+    /// Run the initialization steps with retries
     fn run_init_steps_loop(&mut self) -> anyhow::Result<()> {
         for index in 0..10 {
             match self.run_init_steps() {
@@ -77,6 +81,7 @@ impl Manager {
         anyhow::bail!("running init steps failed")
     }
 
+    /// Run the initialization steps that creates and starts up the containers
     fn run_init_steps(&mut self) -> anyhow::Result<()> {
         let _span = tracing::info_span!("run init steps");
 
@@ -111,6 +116,7 @@ impl Manager {
         Ok(())
     }
 
+    /// Run the container monitoring steps with retries
     fn run_monitor_steps_loop(&mut self) -> anyhow::Result<()> {
         for index in 0..10 {
             match self.run_monitor_steps() {
@@ -131,6 +137,7 @@ impl Manager {
         anyhow::bail!("running monitor steps failed")
     }
 
+    /// Run the container monitoring steps
     fn run_monitor_steps(&mut self) -> anyhow::Result<()> {
         let _span = tracing::info_span!("run monitor steps");
 
@@ -140,6 +147,7 @@ impl Manager {
         Ok(())
     }
 
+    /// Wait for the Docker daemon to start
     fn wait_for_docker(&self) -> anyhow::Result<()> {
         tracing::info!("wait for docker");
         self.update_progress("Waiting for Docker to be ready", 0);
@@ -161,6 +169,7 @@ impl Manager {
         Ok(())
     }
 
+    /// Show an error message and reboot the OS after a countdown
     fn reboot_due_to_error<S: AsRef<str>>(&self, text: S) -> anyhow::Result<()> {
         tracing::info!("reboot due to error");
 
@@ -172,6 +181,7 @@ impl Manager {
         Ok(())
     }
 
+    /// Block and show a countdown timer indicating a retry
     fn countdown_timer<S: AsRef<str>>(&self, text: S, seconds: u64) {
         let when = Instant::now() + Duration::from_secs(seconds);
 
@@ -193,6 +203,7 @@ impl Manager {
         }
     }
 
+    /// Restart the machine
     fn reboot_gracefully(&self) -> anyhow::Result<()> {
         tracing::info!("reboot gracefully");
 
@@ -204,6 +215,7 @@ impl Manager {
         Ok(())
     }
 
+    /// Power off the machine
     fn poweroff_gracefully(&self) -> anyhow::Result<()> {
         tracing::info!("poweroff gracefully");
 
@@ -215,6 +227,7 @@ impl Manager {
         Ok(())
     }
 
+    /// Show a progress message to the display service
     fn update_progress<S: Into<String>>(&self, text: S, percent: u8) {
         match self.display_ipc.send_progress(text, percent) {
             Ok(_) => {}
@@ -222,6 +235,7 @@ impl Manager {
         }
     }
 
+    /// Show a finished initialization message to the display service
     fn update_ready<S: Into<String>>(&self, text: S) {
         match self.display_ipc.send_ready(text) {
             Ok(_) => {}
@@ -229,6 +243,7 @@ impl Manager {
         }
     }
 
+    /// Load application state from disk
     fn load_state(&mut self) -> anyhow::Result<()> {
         self.update_progress("Loading appliance manager state", 0);
 
@@ -245,6 +260,7 @@ impl Manager {
         Ok(())
     }
 
+    /// Download and an execute a file to modify the system
     fn patch_system(&self) -> anyhow::Result<()> {
         if let Some(url) = &self.config.patch_script_url {
             self.download_patch_file(url)?;
@@ -265,6 +281,7 @@ impl Manager {
         Ok(())
     }
 
+    /// Download the patch file to disk and make it executable
     fn download_patch_file(&self, url: &str) -> anyhow::Result<()> {
         tracing::info!("downloading patch file");
         self.update_progress("Downloading system patch file", 0);
@@ -289,6 +306,7 @@ impl Manager {
         Ok(())
     }
 
+    /// Create all the Docker containers (but do not start them)
     fn create_containers(&self) -> anyhow::Result<()> {
         let containers = vec![
             (
@@ -332,6 +350,7 @@ impl Manager {
         Ok(())
     }
 
+    /// Start the Watchtower run-once container to force the containers to update
     fn update_containers(&self) -> anyhow::Result<()> {
         tracing::info!("update containers");
         self.update_progress("Updating containers", 0);
@@ -346,6 +365,7 @@ impl Manager {
         }
     }
 
+    /// Start the Watchtower and payload containers
     fn start_containers(&self) -> anyhow::Result<()> {
         self.run_pre_start_command()?;
 
@@ -371,6 +391,7 @@ impl Manager {
         Ok(())
     }
 
+    /// Run a script before the payload is started
     fn run_pre_start_command(&self) -> anyhow::Result<()> {
         tracing::info!("run pre start command");
 
@@ -384,6 +405,7 @@ impl Manager {
         }
     }
 
+    /// Run a script when the payload is started
     fn run_post_start_command(&self) -> anyhow::Result<()> {
         tracing::info!("run post start command");
 
@@ -397,6 +419,7 @@ impl Manager {
         }
     }
 
+    /// Wait for the payload checker to say the payload is ready to use
     fn wait_for_payload(&self) -> anyhow::Result<()> {
         tracing::info!("wait for payload");
         self.update_progress("Waiting for payload to start", 0);
@@ -411,36 +434,59 @@ impl Manager {
         }
     }
 
+    /// Tell the user that they can use the web interface
     fn show_ready_message(&self) {
         tracing::info!("payload ready");
         self.update_ready(&self.config.payload_ready_message);
     }
 
-    fn monitor_containers(&self) -> anyhow::Result<()> {
+    /// Continuously check the containers in a loop
+    fn monitor_containers(&mut self) -> anyhow::Result<()> {
         loop {
             self.monitor_container_loop_iteration()?;
             std::thread::sleep(Duration::from_secs(10));
         }
     }
 
-    fn monitor_container_loop_iteration(&self) -> anyhow::Result<()> {
+    /// Run the steps to check if the containers want anything
+    fn monitor_container_loop_iteration(&mut self) -> anyhow::Result<()> {
         tracing::trace!("monitor containers loop iteration");
 
         if self.payload_wants_reboot()? {
             self.reboot_gracefully()?;
         } else if self.payload_wants_poweroff()? {
             self.poweroff_gracefully()?;
+        } else {
+            self.check_payload_status()?;
         }
-
-        // TODO: Check if the warrior container exited
-        // It is tricky to check the reason for the exited state:
-        // * it may have crashed
-        // * Watchtower may be updating it
-        // * the check reboot or check poweroff scripts aren't working correctly
 
         Ok(())
     }
 
+    /// Check the payload to see if it's still running properly
+    fn check_payload_status(&mut self) -> anyhow::Result<()> {
+        // TODO: Possibly restart the container or reboot the system
+        // It is tricky to check the reason for the exited state:
+        // * it may have crashed
+        // * Watchtower may be updating it
+        // * the check reboot or check poweroff scripts aren't working correctly
+        // * the user stopped it
+        // https://docs.docker.com/engine/reference/run/#exit-status
+
+        let status = crate::container::get_container_status(&self.config.payload_name);
+        let exit_code =
+            crate::container::get_container_exit_code(&self.config.payload_name).unwrap_or(0);
+        tracing::trace!(status, exit_code, "monitor payload status");
+
+        if status == "exited" && (1..=124).contains(&exit_code) && !self.payload_crashed {
+            tracing::warn!(status, exit_code, "payload container appears crashed");
+            self.payload_crashed = true;
+        }
+
+        Ok(())
+    }
+
+    /// Returns whether the payload is requesting a machine restart
     fn payload_wants_reboot(&self) -> anyhow::Result<bool> {
         let mut command = Command::new(&self.config.payload_reboot_check);
         let output = crate::logging::trace_command_output(&mut command)?;
@@ -448,6 +494,7 @@ impl Manager {
         Ok(output.status.success())
     }
 
+    /// Returns whether the payload is requesting a machine power off
     fn payload_wants_poweroff(&self) -> anyhow::Result<bool> {
         let mut command = Command::new(&self.config.payload_poweroff_check);
         let output = crate::logging::trace_command_output(&mut command)?;
