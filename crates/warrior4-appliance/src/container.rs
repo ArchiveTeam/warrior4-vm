@@ -2,6 +2,8 @@
 
 use std::process::{Command, Output};
 
+use chrono::{DateTime, Utc};
+
 pub fn get_container_status<S: AsRef<str>>(name: S) -> String {
     let output = {
         let result = Command::new("docker")
@@ -37,6 +39,24 @@ pub fn get_container_exit_code<S: AsRef<str>>(name: S) -> Option<u32> {
         Ok(output) => String::from_utf8_lossy(&output.stdout).trim().parse().ok(),
         Err(error) => {
             tracing::trace!(?error, "get container exit code");
+            None
+        }
+    }
+}
+
+pub fn get_container_finished_at<S: AsRef<str>>(name: S) -> Option<DateTime<Utc>> {
+    let result = Command::new("docker")
+        .arg("inspect")
+        .arg("--type=container")
+        .arg("--format")
+        .arg("{{.State.FinishedAt}}")
+        .arg(name.as_ref())
+        .output();
+
+    match result {
+        Ok(output) => String::from_utf8_lossy(&output.stdout).trim().parse().ok(),
+        Err(error) => {
+            tracing::trace!(?error, "get container finished at");
             None
         }
     }

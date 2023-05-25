@@ -6,10 +6,12 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct State {
-    uuid: Uuid,
-    created: DateTime<Utc>,
+    pub uuid: Uuid,
+    pub created: DateTime<Utc>,
+    pub last_forced_reboot: DateTime<Utc>,
 }
 
 impl State {
@@ -17,6 +19,7 @@ impl State {
         Self {
             uuid: uuid::Uuid::new_v4(),
             created: Utc::now(),
+            last_forced_reboot: Default::default(),
         }
     }
 

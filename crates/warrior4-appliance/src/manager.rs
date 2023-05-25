@@ -30,26 +30,26 @@ impl Manager {
         }
     }
 
-    /// Main loop
+    /// Start up, monitor the system and containers
     pub fn run(&mut self) -> anyhow::Result<()> {
         self.wait_for_docker()?;
 
-        match self.run_init_steps_loop() {
+        match self.init_system_with_retry() {
             Ok(_) => {
-                tracing::debug!("run init steps completed")
+                tracing::debug!("initialization completed")
             }
             Err(error) => {
-                tracing::debug!("run init steps failed");
+                tracing::debug!("initialization failed");
                 self.reboot_due_to_error(format!("{:#}", error))?;
             }
         }
 
-        match self.run_monitor_steps_loop() {
+        match self.monitor_system_with_retry() {
             Ok(_) => {
-                tracing::debug!("run monitor steps completed")
+                tracing::debug!("monitor completed")
             }
             Err(error) => {
-                tracing::debug!("run monitor steps failed");
+                tracing::debug!("monitor failed");
                 self.reboot_due_to_error(format!("{:#}", error))?;
             }
         }
@@ -60,30 +60,30 @@ impl Manager {
     }
 
     /// Run the initialization steps with retries
-    fn run_init_steps_loop(&mut self) -> anyhow::Result<()> {
+    fn init_system_with_retry(&mut self) -> anyhow::Result<()> {
         for index in 0..10 {
-            match self.run_init_steps() {
+            match self.init_system() {
                 Ok(_) => {
                     return Ok(());
                 }
                 Err(error) => {
-                    tracing::error!(?error, "run init steps error");
+                    tracing::error!(?error, "initialization error");
                     let error_message =
                         format!("A problem occurred during start up\n\n{:#}", error);
 
                     let sleep_time = 60 * 2u64.pow(index);
                     tracing::info!(sleep_time, "sleeping");
-                    self.countdown_timer(&error_message, sleep_time);
+                    self.countdown_timer(&error_message, sleep_time, CountdownKind::Retry);
                 }
             }
         }
 
-        anyhow::bail!("running init steps failed")
+        anyhow::bail!("initialization failed repeatedly")
     }
 
     /// Run the initialization steps that creates and starts up the containers
-    fn run_init_steps(&mut self) -> anyhow::Result<()> {
-        let _span = tracing::info_span!("run init steps");
+    fn init_system(&mut self) -> anyhow::Result<()> {
+        let _span = tracing::info_span!("initialization");
 
         self.load_state().context("loading system state failed")?;
 
@@ -116,10 +116,10 @@ impl Manager {
         Ok(())
     }
 
-    /// Run the container monitoring steps with retries
-    fn run_monitor_steps_loop(&mut self) -> anyhow::Result<()> {
+    /// Run the system and containers monitoring steps with retries
+    fn monitor_system_with_retry(&mut self) -> anyhow::Result<()> {
         for index in 0..10 {
-            match self.run_monitor_steps() {
+            match self.monitor_system() {
                 Ok(_) => {
                     return Ok(());
                 }
@@ -129,22 +129,23 @@ impl Manager {
 
                     let sleep_time = 60 * 2u64.pow(index);
                     tracing::info!(sleep_time, "sleeping");
-                    self.countdown_timer(&error_message, sleep_time);
+                    self.countdown_timer(&error_message, sleep_time, CountdownKind::Retry);
                 }
             }
         }
 
-        anyhow::bail!("running monitor steps failed")
+        anyhow::bail!("monitoring system failed")
     }
 
-    /// Run the container monitoring steps
-    fn run_monitor_steps(&mut self) -> anyhow::Result<()> {
-        let _span = tracing::info_span!("run monitor steps");
+    /// Run the system and container monitoring steps in a loop
+    fn monitor_system(&mut self) -> anyhow::Result<()> {
+        let _span = tracing::info_span!("monitor system");
 
-        self.monitor_containers()
-            .context("monitoring the containers failed")?;
-
-        Ok(())
+        loop {
+            self.check_containers()
+                .context("checking the containers failed")?;
+            std::thread::sleep(Duration::from_secs(10));
+        }
     }
 
     /// Wait for the Docker daemon to start
@@ -170,10 +171,27 @@ impl Manager {
     }
 
     /// Show an error message and reboot the OS after a countdown
-    fn reboot_due_to_error<S: AsRef<str>>(&self, text: S) -> anyhow::Result<()> {
-        tracing::info!("reboot due to error");
+    fn reboot_due_to_error<S: AsRef<str>>(&mut self, text: S) -> anyhow::Result<()> {
+        tracing::info!(text = text.as_ref(), "reboot due to error");
 
-        self.countdown_timer(text, 300);
+        // If stuck in a reboot loop, don't constantly fetch things over the network
+        let seconds = {
+            if chrono::Utc::now() - self.state.last_forced_reboot < chrono::Duration::minutes(5) {
+                3600
+            } else {
+                300
+            }
+        };
+
+        self.countdown_timer(text, seconds, CountdownKind::Reboot);
+
+        self.state.last_forced_reboot = chrono::Utc::now();
+        match self.save_state() {
+            Ok(_) => {}
+            Err(error) => {
+                tracing::error!(?error, "save state");
+            }
+        }
 
         tracing::info!("reboot now");
         Command::new("reboot").spawn()?;
@@ -182,7 +200,7 @@ impl Manager {
     }
 
     /// Block and show a countdown timer indicating a retry
-    fn countdown_timer<S: AsRef<str>>(&self, text: S, seconds: u64) {
+    fn countdown_timer<S: AsRef<str>>(&self, text: S, seconds: u64, kind: CountdownKind) {
         let when = Instant::now() + Duration::from_secs(seconds);
 
         loop {
@@ -192,11 +210,18 @@ impl Manager {
                 break;
             }
 
-            let message = format!(
-                "{}\n\nRetrying in {} seconds.",
-                text.as_ref(),
-                remaining.as_secs()
-            );
+            let message = match kind {
+                CountdownKind::Retry => format!(
+                    "{}\n\nRetrying in {} seconds.",
+                    text.as_ref(),
+                    remaining.as_secs()
+                ),
+                CountdownKind::Reboot => format!(
+                    "{}\n\nRestarting the system in {} seconds.",
+                    text.as_ref(),
+                    remaining.as_secs()
+                ),
+            };
 
             self.update_progress(message, 0);
             std::thread::sleep(Duration::from_secs(5));
@@ -256,6 +281,15 @@ impl Manager {
 
             self.state.save(&self.config.state_path)?;
         }
+
+        Ok(())
+    }
+
+    /// Save application state to disk
+    fn save_state(&mut self) -> anyhow::Result<()> {
+        tracing::info!("saving state");
+
+        self.state.save(&self.config.state_path)?;
 
         Ok(())
     }
@@ -373,6 +407,12 @@ impl Manager {
 
         for (index, name) in containers.iter().enumerate() {
             let percent = (index as f32 / containers.len() as f32 * 100.0) as u8;
+            let status = crate::container::get_container_status(name);
+
+            if status == "running" {
+                tracing::debug!(name, "container already running");
+                continue;
+            }
 
             tracing::info!(name, "start container");
             self.update_progress(format!("Starting container {}", name), percent);
@@ -440,21 +480,13 @@ impl Manager {
         self.update_ready(&self.config.payload_ready_message);
     }
 
-    /// Continuously check the containers in a loop
-    fn monitor_containers(&mut self) -> anyhow::Result<()> {
-        loop {
-            self.monitor_container_loop_iteration()?;
-            std::thread::sleep(Duration::from_secs(10));
-        }
-    }
-
     /// Run the steps to check if the containers want anything
-    fn monitor_container_loop_iteration(&mut self) -> anyhow::Result<()> {
+    fn check_containers(&mut self) -> anyhow::Result<()> {
         tracing::trace!("monitor containers loop iteration");
 
-        if self.payload_wants_reboot()? {
+        if self.check_payload_wants_reboot()? {
             self.reboot_gracefully()?;
-        } else if self.payload_wants_poweroff()? {
+        } else if self.check_payload_wants_poweroff()? {
             self.poweroff_gracefully()?;
         } else {
             self.check_payload_status()?;
@@ -465,7 +497,6 @@ impl Manager {
 
     /// Check the payload to see if it's still running properly
     fn check_payload_status(&mut self) -> anyhow::Result<()> {
-        // TODO: Possibly restart the container or reboot the system
         // It is tricky to check the reason for the exited state:
         // * it may have crashed
         // * Watchtower may be updating it
@@ -476,18 +507,31 @@ impl Manager {
         let status = crate::container::get_container_status(&self.config.payload_name);
         let exit_code =
             crate::container::get_container_exit_code(&self.config.payload_name).unwrap_or(0);
-        tracing::trace!(status, exit_code, "monitor payload status");
+        let finished_at = crate::container::get_container_finished_at(&self.config.payload_name)
+            .unwrap_or(chrono::Utc::now());
+        tracing::trace!(status, exit_code, %finished_at, "monitor payload status");
 
-        if status == "exited" && (1..=124).contains(&exit_code) && !self.payload_crashed {
-            tracing::warn!(status, exit_code, "payload container appears crashed");
+        if status != "exited" {
+            return Ok(());
+        }
+
+        if !(1..=124).contains(&exit_code) {
+            return Ok(());
+        }
+
+        if !self.payload_crashed
+            && chrono::Utc::now() - finished_at > chrono::Duration::seconds(300)
+        {
             self.payload_crashed = true;
+            tracing::warn!(status, exit_code, "payload container appears crashed");
+            self.reboot_due_to_error("The container unexpectedly stopped")?;
         }
 
         Ok(())
     }
 
     /// Returns whether the payload is requesting a machine restart
-    fn payload_wants_reboot(&self) -> anyhow::Result<bool> {
+    fn check_payload_wants_reboot(&self) -> anyhow::Result<bool> {
         let mut command = Command::new(&self.config.payload_reboot_check);
         let output = crate::logging::trace_command_output(&mut command)?;
 
@@ -495,10 +539,16 @@ impl Manager {
     }
 
     /// Returns whether the payload is requesting a machine power off
-    fn payload_wants_poweroff(&self) -> anyhow::Result<bool> {
+    fn check_payload_wants_poweroff(&self) -> anyhow::Result<bool> {
         let mut command = Command::new(&self.config.payload_poweroff_check);
         let output = crate::logging::trace_command_output(&mut command)?;
 
         Ok(output.status.success())
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CountdownKind {
+    Retry,
+    Reboot,
 }
