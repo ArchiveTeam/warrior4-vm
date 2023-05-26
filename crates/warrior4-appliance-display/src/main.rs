@@ -25,9 +25,11 @@ static INFO_PROGRESS_BAR_HIDEABLE: &str = "info_progress_bar_hideable";
 #[derive(Parser, Debug)]
 #[command(version)]
 struct Args {
+    /// Bind address for IPC communication
     #[arg(short, long, default_value = "127.0.0.1:40100")]
     ipc_address: SocketAddr,
 
+    /// Switch to and run on the virtual terminal (1 for tty1)
     #[arg(short, long)]
     vt: Option<u8>,
 }

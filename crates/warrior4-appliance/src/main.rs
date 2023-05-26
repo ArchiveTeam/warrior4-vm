@@ -16,9 +16,11 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(version)]
 struct Args {
+    /// Path to the configuration file
     #[arg(short, long, default_value = "/etc/warrior4-appliance.toml")]
     config: PathBuf,
 
+    /// Skip checking whether it is running on the virtual machine
     #[arg(long, default_value_t = false)]
     skip_machine_env_check: bool,
 }
