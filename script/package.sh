@@ -4,8 +4,8 @@
 set -e
 . "$(dirname "$(which "$0")")/etc.sh"
 
-MACHINE_NAME="$APP_NAME-$APP_VERSION-package-$( date +%Y%m%d-%H%M%S )"
-EXPORT_FILENAME="$APP_NAME-v$APP_VERSION-$( date +%Y%m%d-%H%M%S ).ova"
+MACHINE_NAME="$APP_NAME-$APP_VERSION-package-$( date --utc +%Y%m%d-%H%M%S )"
+EXPORT_FILENAME="$APP_NAME-v$APP_VERSION-$( date --utc +%Y%m%d-%H%M%S ).ova"
 
 echo "Creating virtual machine"
 
