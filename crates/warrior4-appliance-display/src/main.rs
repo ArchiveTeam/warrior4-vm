@@ -1,9 +1,11 @@
 //! Entry point for the virtual appliance information display
 //!
+mod api;
 mod ipc;
 
 use std::{net::SocketAddr, sync::mpsc::Receiver};
 
+use api::Request;
 use clap::Parser;
 use cursive::{
     direction::Orientation,
@@ -13,7 +15,6 @@ use cursive::{
     views::{Dialog, HideableView, LinearLayout, NamedView, Panel, ProgressBar, TextView},
     Cursive,
 };
-use ipc::IPCEvent;
 use vt::{Console, VtNumber};
 
 static COMMON_TITLE: &str = "ArchiveTeam Warrior 4th Edition";
@@ -82,7 +83,7 @@ fn set_up_ipc(cursive: &mut Cursive, address: SocketAddr) {
 type CursiveSender = Sender<Box<dyn FnOnce(&mut Cursive) + Send>>;
 
 fn process_callbacks(
-    ipc_receiver: Receiver<IPCEvent>,
+    ipc_receiver: Receiver<Request>,
     cursive_sender: CursiveSender,
 ) -> anyhow::Result<()> {
     loop {
@@ -92,16 +93,19 @@ fn process_callbacks(
     }
 }
 
-fn handle_ipc_event(ipc_event: IPCEvent, cursive_sender: CursiveSender) -> anyhow::Result<()> {
+fn handle_ipc_event(ipc_event: Request, cursive_sender: CursiveSender) -> anyhow::Result<()> {
     match ipc_event {
-        IPCEvent::Progress { text, percent } => {
+        Request::ProgressInfo { text, percent } => {
             cursive_sender
                 .send(Box::new(move |cursive| {
                     show_progress(cursive, text, percent)
                 }))
                 .map_err(|e| anyhow::anyhow!(e.to_string()))?;
         }
-        IPCEvent::Ready { text } => {
+        Request::ReadyInfo { text }
+        | Request::Info { text }
+        | Request::Warning { text }
+        | Request::Error { text } => {
             cursive_sender
                 .send(Box::new(|cursive| {
                     show_ready(cursive, text);
@@ -152,6 +156,20 @@ fn add_info_panel(cursive: &mut Cursive) {
 }
 
 /// Update the message displayed to the given text
+fn show_message(cursive: &mut Cursive, text: String) {
+    cursive.call_on_name(INFO_TEXT_VIEW, |view: &mut TextView| {
+        view.set_content(text);
+    });
+
+    cursive.call_on_name(
+        INFO_PROGRESS_BAR_HIDEABLE,
+        |view: &mut HideableView<NamedView<ProgressBar>>| {
+            view.hide();
+        },
+    );
+}
+
+/// Update the message displayed to the given text and progress bar value
 fn show_progress(cursive: &mut Cursive, text: String, percent: u8) {
     cursive.call_on_name(INFO_TEXT_VIEW, |view: &mut TextView| {
         view.set_content(text);
@@ -175,15 +193,7 @@ fn show_progress(cursive: &mut Cursive, text: String, percent: u8) {
 
 /// Show the message that tells the user the web interface is ready to log in
 fn show_ready(cursive: &mut Cursive, text: String) {
-    cursive.call_on_name(INFO_TEXT_VIEW, |view: &mut TextView| {
-        view.set_content(text);
-    });
-    cursive.call_on_name(
-        INFO_PROGRESS_BAR_HIDEABLE,
-        |view: &mut HideableView<NamedView<ProgressBar>>| {
-            view.hide();
-        },
-    );
+    show_message(cursive, text);
 }
 
 /// Returns the output text for the Info menu item

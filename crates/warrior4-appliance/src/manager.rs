@@ -90,7 +90,7 @@ impl Manager {
 
         if let Err(error) = self.patch_system().context("patching the system failed") {
             tracing::warn!(?error, "skipping patch system");
-            self.update_progress(format!("{:#}", error), 0);
+            self.display_warning(format!("{:#}", error));
             std::thread::sleep(Duration::from_secs(5));
         }
 
@@ -102,7 +102,7 @@ impl Manager {
             .context("updating the containers failed")
         {
             tracing::warn!(?error, "skipping updating containers");
-            self.update_progress(format!("{:#}", error), 0);
+            self.display_warning(format!("{:#}", error));
             std::thread::sleep(Duration::from_secs(5));
         }
 
@@ -152,7 +152,7 @@ impl Manager {
     /// Wait for the Docker daemon to start
     fn wait_for_docker(&self) -> anyhow::Result<()> {
         tracing::info!("wait for docker");
-        self.update_progress("Waiting for Docker to be ready", 0);
+        self.display_info("Waiting for Docker to be ready");
 
         loop {
             let mut command = Command::new("docker");
@@ -224,7 +224,7 @@ impl Manager {
                 ),
             };
 
-            self.update_progress(message, 0);
+            self.display_error(message);
             std::thread::sleep(Duration::from_secs(5));
         }
     }
@@ -233,7 +233,7 @@ impl Manager {
     fn reboot_gracefully(&self) -> anyhow::Result<()> {
         tracing::info!("reboot gracefully");
 
-        self.update_progress("The system is now rebooting as requested", 0);
+        self.display_info("The system is now rebooting as requested");
 
         let mut command = Command::new("reboot");
         crate::logging::log_command_output(&mut command)?;
@@ -245,7 +245,7 @@ impl Manager {
     fn poweroff_gracefully(&self) -> anyhow::Result<()> {
         tracing::info!("poweroff gracefully");
 
-        self.update_progress("The system is now powering off as requested", 0);
+        self.display_info("The system is now powering off as requested");
 
         let mut command = Command::new("poweroff");
         crate::logging::log_command_output(&mut command)?;
@@ -253,16 +253,40 @@ impl Manager {
         Ok(())
     }
 
-    /// Show a progress message to the display service
-    fn update_progress<S: Into<String>>(&self, text: S, percent: u8) {
+    /// Send an info message to the display service
+    fn display_info<S: Into<String>>(&self, text: S) {
+        match self.display_ipc.send_info(text) {
+            Ok(_) => {}
+            Err(error) => tracing::error!(?error, "display ipc error"),
+        }
+    }
+
+    /// Send a warning message to the display service
+    fn display_warning<S: Into<String>>(&self, text: S) {
+        match self.display_ipc.send_warning(text) {
+            Ok(_) => {}
+            Err(error) => tracing::error!(?error, "display ipc error"),
+        }
+    }
+
+    /// Send an error message to the display service
+    fn display_error<S: Into<String>>(&self, text: S) {
+        match self.display_ipc.send_error(text) {
+            Ok(_) => {}
+            Err(error) => tracing::error!(?error, "display ipc error"),
+        }
+    }
+
+    /// Send a progress bar message to the display service
+    fn display_progress<S: Into<String>>(&self, text: S, percent: u8) {
         match self.display_ipc.send_progress(text, percent) {
             Ok(_) => {}
             Err(error) => tracing::error!(?error, "display ipc error"),
         }
     }
 
-    /// Show a finished initialization message to the display service
-    fn update_ready<S: Into<String>>(&self, text: S) {
+    /// Send a finished initialization message to the display service
+    fn display_ready<S: Into<String>>(&self, text: S) {
         match self.display_ipc.send_ready(text) {
             Ok(_) => {}
             Err(error) => tracing::error!(?error, "display ipc error"),
@@ -271,7 +295,7 @@ impl Manager {
 
     /// Load application state from disk
     fn load_state(&mut self) -> anyhow::Result<()> {
-        self.update_progress("Loading appliance manager state", 0);
+        self.display_info("Loading appliance manager state");
 
         if self.config.state_path.try_exists()? {
             tracing::info!("loading state");
@@ -298,7 +322,7 @@ impl Manager {
     /// Wait for an internet connection
     fn wait_for_internet_connection(&self) -> anyhow::Result<()> {
         tracing::info!("wait for internet connection");
-        self.update_progress("Waiting for internet connection", 0);
+        self.display_info("Waiting for internet connection");
 
         loop {
             let mut command = Command::new("ping");
@@ -323,7 +347,7 @@ impl Manager {
             self.download_patch_file(url)?;
 
             tracing::info!("executing patch file");
-            self.update_progress("Patching the system", 0);
+            self.display_info("Patching the system");
 
             let mut command = std::process::Command::new(PATCH_FILE_PATH);
             let output = crate::logging::log_command_output(&mut command)?;
@@ -341,7 +365,7 @@ impl Manager {
     /// Download the patch file to disk and make it executable
     fn download_patch_file(&self, url: &str) -> anyhow::Result<()> {
         tracing::info!("downloading patch file");
-        self.update_progress("Downloading system patch file", 0);
+        self.display_info("Downloading system patch file");
 
         let mut response = reqwest::blocking::get(url)?;
 
@@ -389,7 +413,7 @@ impl Manager {
             tracing::info!(name, ?creator, "create container");
 
             let percent = (index as f32 / containers.len() as f32 * 100.0) as u8;
-            self.update_progress(format!("Creating container {}", name), percent);
+            self.display_progress(format!("Creating container {}", name), percent);
 
             let mut command = Command::new(creator);
             let output = crate::logging::log_command_output(&mut command)?;
@@ -410,7 +434,7 @@ impl Manager {
     /// Start the Watchtower run-once container to force the containers to update
     fn update_containers(&self) -> anyhow::Result<()> {
         tracing::info!("update containers");
-        self.update_progress("Updating containers", 0);
+        self.display_progress("Updating containers", 0);
 
         let (output1, output2) =
             crate::container::run_container_foreground(&self.config.watchtower_run_once_name)?;
@@ -438,7 +462,7 @@ impl Manager {
             }
 
             tracing::info!(name, "start container");
-            self.update_progress(format!("Starting container {}", name), percent);
+            self.display_progress(format!("Starting container {}", name), percent);
 
             let output = crate::container::start_container(name)?;
 
@@ -485,7 +509,7 @@ impl Manager {
     /// Wait for the payload checker to say the payload is ready to use
     fn wait_for_payload(&self) -> anyhow::Result<()> {
         tracing::info!("wait for payload");
-        self.update_progress("Waiting for payload to start", 0);
+        self.display_info("Waiting for payload to start");
 
         let mut command = Command::new(&self.config.payload_pre_start);
         let output = crate::logging::log_command_output(&mut command)?;
@@ -500,7 +524,7 @@ impl Manager {
     /// Tell the user that they can use the web interface
     fn show_ready_message(&self) {
         tracing::info!("payload ready");
-        self.update_ready(&self.config.payload_ready_message);
+        self.display_ready(&self.config.payload_ready_message);
     }
 
     /// Run the steps to check if the containers want anything

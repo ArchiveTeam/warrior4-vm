@@ -5,15 +5,7 @@ use std::{
     time::Duration,
 };
 
-use serde::{Deserialize, Serialize};
-
-/// The JSON object that gets serialized
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct APIDoc {
-    request: String,
-    text: Option<String>,
-    percent: Option<u8>, // 0 to 100
-}
+use warrior4_appliance_display::IPCRequest;
 
 pub struct DisplayIPC {
     address: SocketAddr,
@@ -24,21 +16,31 @@ impl DisplayIPC {
         Self { address }
     }
 
+    pub fn send_info<S: Into<String>>(&self, text: S) -> anyhow::Result<()> {
+        self.send_doc(IPCRequest::Info { text: text.into() })?;
+        Ok(())
+    }
+
+    pub fn send_warning<S: Into<String>>(&self, text: S) -> anyhow::Result<()> {
+        self.send_doc(IPCRequest::Warning { text: text.into() })?;
+        Ok(())
+    }
+
+    pub fn send_error<S: Into<String>>(&self, text: S) -> anyhow::Result<()> {
+        self.send_doc(IPCRequest::Warning { text: text.into() })?;
+        Ok(())
+    }
+
     pub fn send_progress<S: Into<String>>(&self, text: S, percent: u8) -> anyhow::Result<()> {
-        self.send_doc(APIDoc {
-            request: "progress".to_string(),
-            text: Some(text.into()),
-            percent: Some(percent),
+        self.send_doc(IPCRequest::ProgressInfo {
+            text: text.into(),
+            percent,
         })?;
         Ok(())
     }
 
     pub fn send_ready<S: Into<String>>(&self, text: S) -> anyhow::Result<()> {
-        self.send_doc(APIDoc {
-            request: "ready".to_string(),
-            text: Some(text.into()),
-            percent: None,
-        })?;
+        self.send_doc(IPCRequest::ReadyInfo { text: text.into() })?;
         Ok(())
     }
 
@@ -50,7 +52,7 @@ impl DisplayIPC {
         Ok(stream)
     }
 
-    fn send_doc(&self, api_doc: APIDoc) -> anyhow::Result<()> {
+    fn send_doc(&self, api_doc: IPCRequest) -> anyhow::Result<()> {
         let stream = self.connect()?;
         serde_json::to_writer(stream, &api_doc)?;
 

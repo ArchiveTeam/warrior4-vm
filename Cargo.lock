@@ -1588,6 +1588,7 @@ dependencies = [
  "tracing-appender",
  "tracing-subscriber",
  "uuid",
+ "warrior4-appliance-display",
 ]
 
 [[package]]
