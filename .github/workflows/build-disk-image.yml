@@ -1,0 +1,28 @@
+name: Build disk image
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Save build timestamp
+        id: set_build_timestamp
+        run: echo "build_timestamp=$( date --utc +%Y%m%d-%H%M%S )" >> "$GITHUB_OUTPUT"
+      - name: Install additional dev dependencies
+        run: sudo apt-get install --yes musl-tools qemu-utils
+      - name: Install Rust target
+        run: rustup target add x86_64-unknown-linux-musl
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+      - name: Running automatic build script
+        run: ./script/build.sh
+      - name: Compress disk images
+        run: >
+          gzip -9 -v
+          output/warrior4-image.qcow2
+          output/warrior4-image.vdi
+      - name: Save disk images
+        uses: actions/upload-artifact@v3
+        with:
+          name: "warrior4-image-${{ steps.set_build_timestamp.outputs.build_timestamp }}"
+          path: output/
