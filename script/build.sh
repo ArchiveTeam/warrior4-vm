@@ -24,7 +24,7 @@ sudo $LIB_DIR/alpine-make-vm-image/alpine-make-vm-image \
     --image-size 60G \
     --fs-skel-dir ./appliance/skeleton \
     --fs-skel-chown root:root \
-    --packages "chrony logrotate dnscrypt-proxy docker" \
+    --packages "terminus-font chrony logrotate dnscrypt-proxy docker" \
     --script-chroot \
     "$OUTPUT_DIR/$QCOW2_DISK_FILENAME" \
     -- ./appliance/script/configure.sh

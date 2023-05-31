@@ -1,0 +1,4 @@
+# Linux framebuffer console font config for warrior appliance
+# https://wiki.alpinelinux.org/wiki/Fonts
+
+consolefont="ter-v20b.psf.gz"
