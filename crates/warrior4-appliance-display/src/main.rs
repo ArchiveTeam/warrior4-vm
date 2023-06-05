@@ -121,9 +121,14 @@ fn handle_ipc_event(ipc_event: Request, cursive_sender: CursiveSender) -> anyhow
 fn add_info(cursive: &mut Cursive) {
     cursive.menubar().add_leaf("Info", |c| {
         c.add_layer(
-            Dialog::around(TextView::new(generate_info_text()).scrollable())
-                .title("Advanced Information")
-                .dismiss_button("Close"),
+            Dialog::around(
+                TextView::new(generate_info_text())
+                    .no_wrap()
+                    .scrollable()
+                    .scroll_x(true),
+            )
+            .title("Advanced Information")
+            .dismiss_button("Close"),
         )
     });
 }
