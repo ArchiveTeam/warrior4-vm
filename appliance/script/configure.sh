@@ -29,6 +29,7 @@ rc-update add dnscrypt-proxy default
 echo -e "archiveteam\narchiveteam" | passwd root
 
 rc-update add docker default
+rc-update add open-vm-tools boot
 
 chmod 755 /etc/init.d/warrior4-appliance
 chmod 755 /etc/init.d/warrior4-appliance-display

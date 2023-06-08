@@ -3,3 +3,6 @@ chrony
 logrotate
 dnscrypt-proxy
 docker
+open-vm-tools
+open-vm-tools-guestinfo
+open-vm-tools-deploypkg
