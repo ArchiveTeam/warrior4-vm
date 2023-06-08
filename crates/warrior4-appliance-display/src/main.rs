@@ -183,11 +183,7 @@ fn show_progress(cursive: &mut Cursive, text: String, percent: u8) {
     cursive.call_on_name(
         INFO_PROGRESS_BAR_HIDEABLE,
         |view: &mut HideableView<NamedView<ProgressBar>>| {
-            if percent > 0 {
-                view.unhide();
-            } else {
-                view.hide();
-            }
+            view.unhide();
         },
     );
 
@@ -205,7 +201,7 @@ fn show_ready(cursive: &mut Cursive, text: String) {
 fn generate_info_text() -> String {
     let programs = vec![
         vec!["ip", "addr", "show"],
-        vec!["rc-status"],
+        vec!["rc-status", "--all"],
         vec!["docker", "ps", "-a"],
     ];
 
