@@ -1,0 +1,5 @@
+terminus-font
+chrony
+logrotate
+dnscrypt-proxy
+docker

@@ -6,6 +6,9 @@ set -e
 
 LIB_DIR="$(dirname "$(which "$0")")/../lib"
 
+cat ./appliance/packages.txt > /dev/null
+PACKAGES="$(cat ./appliance/packages.txt)"
+
 echo "Output directory: $OUTPUT_DIR"
 mkdir -p $OUTPUT_DIR
 
@@ -24,7 +27,7 @@ sudo $LIB_DIR/alpine-make-vm-image/alpine-make-vm-image \
     --image-size 60G \
     --fs-skel-dir ./appliance/skeleton \
     --fs-skel-chown root:root \
-    --packages "terminus-font chrony logrotate dnscrypt-proxy docker" \
+    --packages "$PACKAGES" \
     --script-chroot \
     "$OUTPUT_DIR/$QCOW2_DISK_FILENAME" \
     -- ./appliance/script/configure.sh
