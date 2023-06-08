@@ -69,6 +69,8 @@ VBoxManage modifyvm $MACHINE_NAME \
 VBoxManage export $MACHINE_NAME \
     --output "$OUTPUT_DIR/$EXPORT_FILENAME" \
     --vsys 0 \
+    --ovf20 \
+    --manifest \
     --product "ArchiveTeam Warrior" \
     --vendor "ArchiveTeam" \
     --vendorurl "http://www.archiveteam.org/" \
