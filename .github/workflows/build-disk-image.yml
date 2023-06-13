@@ -25,6 +25,7 @@ jobs:
           gzip -9 -v
           output/warrior4-image.qcow2
           output/warrior4-image.vdi
+          output/warrior4-image.vmdk
       - name: Save disk images
         uses: actions/upload-artifact@v3
         with:

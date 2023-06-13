@@ -18,7 +18,28 @@ If you want to see the older version 3, see [Ubuntu-Warrior](https://github.com/
 ### Known issues
 
 * OVA file may not be fully compatible with other virtual machine software.
+  * In this case, you will need to download the vmdk (VMware) or qcow2 (QEMU) disk images and use that as the disk for a new virtual machine. Then, configure the machine as described in the next section.
 * Some issues may still remain from version 3.
+
+### Suggested defaults for manual configuration
+
+If you are manually creating a new virtual machine using a disk image, here are the suggested defaults:
+
+| Hardware | Value |
+| -------- | ----- |
+| Memory | 512 MB |
+| Video memory | 16 MB |
+| 3D graphics | off |
+| CPUs | 1 |
+| Network | NAT |
+| USB | off |
+| Audio | off |
+
+When using NAT network type, port forwarding is required to access the web interface. The following allows you to access port 8001 on localhost that is forwarded to the VM's port 8001:
+
+| Name | Host address | Host port | VM address | VM port |
+| ---- | ------------ | --------- | ------------- | ---------- |
+| Web Interface | 127.0.0.1 | 8001 | | 8001 |
 
 ## Developer
 

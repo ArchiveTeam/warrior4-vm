@@ -35,4 +35,7 @@ sudo $LIB_DIR/alpine-make-vm-image/alpine-make-vm-image \
 echo "Converting qcow2 to vdi"
 qemu-img convert -O vdi "$OUTPUT_DIR/$QCOW2_DISK_FILENAME" "$OUTPUT_DIR/$VDI_DISK_FILENAME"
 
+echo "Converting qcow2 to vmdk"
+qemu-img convert -O vmdk "$OUTPUT_DIR/$QCOW2_DISK_FILENAME" "$OUTPUT_DIR/$VMDK_DISK_FILENAME"
+
 echo "Build done"
