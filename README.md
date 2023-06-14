@@ -18,12 +18,22 @@ If you want to see the older version 3, see [Ubuntu-Warrior](https://github.com/
 ### Known issues
 
 * OVA file may not be fully compatible with other virtual machine software.
-  * In this case, you will need to download the vmdk (VMware) or qcow2 (QEMU) disk images and use that as the disk for a new virtual machine. Then, configure the machine as described in the next section.
+  * In this case, you will need to download the disk image instead and manually configure a new virtual machine to use them. See the next section for details.
 * Some issues may still remain from version 3.
 
-### Suggested defaults for manual configuration
+### Using the disk images
 
-If you are manually creating a new virtual machine using a disk image, here are the suggested defaults:
+Using the disk image directly is intended for advanced cases or when the OVA file is not compatible.
+
+To use the disk image:
+
+1. Download the supported format: vmdk (VMware) or qcow2 (QEMU).
+2. Decompress them (unzip/gunzip).
+3. Move the disk image file to where your virtual machines are saved. Since the VM software will use this existing file as its storage disk, you may want to keep a copy of the original to avoid having to redownload a new disk image.
+4. Create a new machine and choose the existing disk file that you have downloaded and moved.
+5. Configure the machine as described in the next section.
+
+Here are the suggested defaults:
 
 | Hardware | Value |
 | -------- | ----- |
