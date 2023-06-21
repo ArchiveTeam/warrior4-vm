@@ -23,14 +23,16 @@ If you want to see the older version 3, see [Ubuntu-Warrior](https://github.com/
 
 ### Using the disk images
 
-Using the disk image directly is intended for advanced cases or when the OVA file is not compatible.
+Using the disk image directly is intended for advanced cases or when the OVA file is not compatible. This will expand to 60GB.
+
+In some cases, such as using ESXi, you may need to "reformat" the image to work. This can be done using `vmkfstools -i input.vmdk output.vmdk`. See [VMWare docs](https://kb.vmware.com/s/article/1028943) for more information.
 
 To use the disk image:
 
 1. Download the supported format: vmdk (VMware) or qcow2 (QEMU).
 2. Decompress them (unzip/gunzip).
 3. Move the disk image file to where your virtual machines are saved. Since the VM software will use this existing file as its storage disk, you may want to keep a copy of the original to avoid having to redownload a new disk image.
-4. Create a new machine and choose the existing disk file that you have downloaded and moved.
+4. Create a new machine (select either Alpine Linux 64-bit variant if available, or else "Other Linux (64-bit)") and choose the existing disk file that you have downloaded and moved.
 5. Configure the machine as described in the next section.
 
 Here are the suggested defaults:
