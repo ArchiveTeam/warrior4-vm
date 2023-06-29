@@ -524,7 +524,14 @@ impl Manager {
     /// Tell the user that they can use the web interface
     fn show_ready_message(&self) {
         tracing::info!("payload ready");
-        self.display_ready(&self.config.payload_ready_message);
+
+        let eth0_ip_address = crate::net::get_eth0_ip_address();
+        let message = self
+            .config
+            .payload_ready_message
+            .replace("{ETH0_IP_ADDRESS}", &eth0_ip_address);
+
+        self.display_ready(message);
     }
 
     /// Run the steps to check if the containers want anything

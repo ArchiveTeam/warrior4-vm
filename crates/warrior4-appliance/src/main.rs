@@ -5,6 +5,7 @@ mod container;
 mod ipc;
 mod logging;
 mod manager;
+mod net;
 mod state;
 
 use std::path::{Path, PathBuf};

@@ -44,7 +44,9 @@ To manage your warrior, open your web browser and login to the web interface at
 
     http://127.0.0.1:8001
 
-Advanced information: press the Esc key to access the menu.
+Advanced information:
+    eth0 IP address: {ETH0_IP_ADDRESS}
+    Press the Esc key to access the menu.
 """
 
 ## Whether to reboot when the payload exits with an application error exit code
