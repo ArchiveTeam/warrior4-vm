@@ -413,7 +413,13 @@ impl Manager {
             tracing::info!(name, ?creator, "create container");
 
             let percent = (index as f32 / containers.len() as f32 * 100.0) as u8;
-            self.display_progress(format!("Creating container {}", name), percent);
+            self.display_progress(
+                format!(
+                    "Downloading and creating container {}\n\nPlease wait. This may take a while.",
+                    name
+                ),
+                percent,
+            );
 
             let mut command = Command::new(creator);
             let output = crate::logging::log_command_output(&mut command)?;
@@ -434,7 +440,10 @@ impl Manager {
     /// Start the Watchtower run-once container to force the containers to update
     fn update_containers(&self) -> anyhow::Result<()> {
         tracing::info!("update containers");
-        self.display_progress("Updating containers", 0);
+        self.display_progress(
+            "Updating containers\n\nPlease wait. This may take a while.",
+            0,
+        );
 
         let (output1, output2) =
             crate::container::run_container_foreground(&self.config.watchtower_run_once_name)?;
