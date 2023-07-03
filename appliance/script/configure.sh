@@ -26,6 +26,7 @@ rc-update add chronyd default
 rc-update add dnscrypt-proxy default
 
 # Customizations
+echo "warrior" > /etc/hostname
 echo -e "archiveteam\narchiveteam" | passwd root
 
 rc-update add docker default
