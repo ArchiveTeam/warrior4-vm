@@ -74,3 +74,22 @@ Then run:
 ```
 
 The ova file should be generated in the `output` directory. That file is the virtual appliance. You may delete the vdi file now.
+
+## Logging into the virtual machine
+
+Switch to tty3 console (using guest keyboard) using either Alt+RightArrow or Alt+F3.
+
+## Creating patches
+
+The `appliance/script/patch.sh` is downloaded by the VM from the git "patch" branch and executed to patch the system. It first backs up the existing executables and then uses a tar archive to overwrite the executables.
+
+To create the tar archive, run `script/patch-tarball.sh` to generate it. The tar archive is referred to as the patch tarball.
+
+To test the tarball, you can manually edit and execute the patch script. You can start up a local web server using something like `python3 -m http.server`. If you are using VirtualBox NAT, 10.0.2.2 is forwarded to your host's localhost interface. While inside the virtual machine, download your dev patch and execute it. Adjust commands as needed:
+
+```sh
+touch /etc/warrior4-patch-experimental
+wget http://10.0.2.2:8000/appliance/script/patch.sh -O patch.sh
+chmod +x patch.sh
+./patch.sh
+```

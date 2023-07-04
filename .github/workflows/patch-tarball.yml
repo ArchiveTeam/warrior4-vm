@@ -1,0 +1,27 @@
+name: Create patch tarball
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Save build timestamp
+        id: set_build_timestamp
+        run: echo "build_timestamp=$( date --utc +%Y%m%d-%H%M%S )" >> "$GITHUB_OUTPUT"
+      - name: Install additional dev dependencies
+        run: sudo apt-get update && sudo apt-get install --yes musl-tools
+      - name: Install Rust target
+        run: rustup target add x86_64-unknown-linux-musl
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+      - name: Running build script
+        run: ./script/patch-tarball.sh
+      - name: Save tarball
+        uses: actions/upload-artifact@v3
+        with:
+          name: "warrior4-image-${{ steps.set_build_timestamp.outputs.build_timestamp }}"
+          path: output/
