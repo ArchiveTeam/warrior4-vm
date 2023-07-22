@@ -2,8 +2,6 @@
 
 This repository contains the [Warrior](https://wiki.archiveteam.org/index.php/ArchiveTeam_Warrior) Virtual Machine Appliance Version 4 for [ArchiveTeam](https://archiveteam.org).
 
-*Prereleases are available for testing. Note that they are work-in-progress and may not be stable yet.*
-
 💿 If you are looking to download the warrior, a ready-to-use virtual appliance is located at the Releases section or at [Warrior HQ downloads](https://warriorhq.archiveteam.org/downloads/warrior4/). You'll need a virtualization solution of your choice such as [VirtualBox](https://www.virtualbox.org/).
 
 🐋 If you are looking to run the warrior in a Docker container, use the image available from [warrior-dockerfile](https://github.com/ArchiveTeam/warrior-dockerfile).
