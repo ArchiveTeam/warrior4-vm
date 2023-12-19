@@ -10,7 +10,7 @@ If you want to see the older version 3, see [Ubuntu-Warrior](https://github.com/
 
 ## Support
 
-* If you need help or troubleshooting information, check the [FAQs](https://wiki.archiveteam.org/index.php/ArchiveTeam_Warrior) or Issues section to see if your problem has been answered already. If you want to to discuss in general, join the warrior IRC channel.
+* If you need help or troubleshooting information, check the [FAQs](https://wiki.archiveteam.org/index.php/ArchiveTeam_Warrior) or Issues section to see if your problem has been answered already. If you want to to discuss in general, join hackint IRC [#warrior](https://webirc.hackint.org/#irc://irc.hackint.org/#warrior) channel.
 * For bug reports, please file an issue on the Issues section.
 
 ### Known issues
