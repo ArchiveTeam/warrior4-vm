@@ -14,6 +14,7 @@ APK_FILENAME="warrior4-appliance-$APK_VERSION.apk"
 echo "Staging directory: $STAGING_DIR"
 mkdir -p $STAGING_DIR
 mkdir -p $STAGING_DIR/etc
+mkdir -p $STAGING_DIR/etc/init.d
 mkdir -p $STAGING_DIR/usr/bin
 mkdir -p $STAGING_DIR/usr/lib/warrior4-appliance
 
@@ -21,21 +22,24 @@ echo "Building binaries"
 cargo build --release --target x86_64-unknown-linux-musl
 
 echo "Copying binaries to staging directory"
-install --preserve-timestamps --mode=755 \
+install --preserve-timestamps --mode=755 --verbose \
     target/x86_64-unknown-linux-musl/release/warrior4-appliance \
     target/x86_64-unknown-linux-musl/release/warrior4-appliance-display \
     $STAGING_DIR/usr/bin/
 
 echo "Copying skeleton files to staging directory"
-install --preserve-timestamps --mode=755 \
-    appliance/skeleton/usr/bin/* \
-    $STAGING_DIR/usr/bin/
-install --preserve-timestamps --mode=755 \
-    appliance/skeleton/usr/lib/warrior4-appliance/*.sh \
-    $STAGING_DIR/usr/lib/warrior4-appliance/
-install --preserve-timestamps --mode=755 \
+install --preserve-timestamps --mode=755 --verbose \
     appliance/skeleton/etc/warrior4* \
     $STAGING_DIR/etc/
+install --preserve-timestamps --mode=755 --verbose \
+    appliance/skeleton/etc/init.d/warrior4* \
+    $STAGING_DIR/etc/init.d/
+install --preserve-timestamps --mode=755 --verbose \
+    appliance/skeleton/usr/bin/warrior4* \
+    $STAGING_DIR/usr/bin/
+install --preserve-timestamps --mode=755 --verbose \
+    appliance/skeleton/usr/lib/warrior4-appliance/*.sh \
+    $STAGING_DIR/usr/lib/warrior4-appliance/
 
 echo "Creating apk"
 fpm -s dir -t apk -p $OUTPUT_DIR/$APK_FILENAME \

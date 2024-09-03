@@ -7,12 +7,14 @@ set -e
 STATE_PATH="/var/lib/warrior4-appliance/patch-version"
 BACKUP_TAR_PATH="/var/lib/warrior4-appliance/warrior4-backup.tar.gz"
 
-APK_URL="https://warriorhq.archiveteam.org/downloads/warrior4/patch/warrior4-appliance-4.0-20000101-000000.apk"
+APK_NAME="warrior4-appliance"
 APK_VERSION="4.0-20000101-000000"
+APK_URL="https://warriorhq.archiveteam.org/downloads/warrior4/patch/$APK_NAME-$APK_VERSION.apk"
 APK_SHA256=""
 
-EXPERIMENTAL_APK_URL="http://10.0.0.2:8000/output/warrior4-appliance-4.0-20000101-000000.apk"
-EXPERIMENTAL_APK_VERSION="4.0-20000101-000000"
+EXPERIMENTAL_APK_NAME="warrior4-appliance"
+EXPERIMENTAL_APK_VERSION="4.0-20240101-120100"
+EXPERIMENTAL_APK_URL="http://10.0.2.2:8000/output/$EXPERIMENTAL_APK_NAME-$EXPERIMENTAL_APK_VERSION.apk"
 EXPERIMENTAL_APK_SHA256=""
 
 if [ ! -f /etc/warrior4-env ]; then
@@ -53,7 +55,7 @@ patch_by_apk() {
     sha256sum -c /tmp/warrior4-patch-checksum
     exit_code=$?
 
-    if [ $exit_code = -ne 0 ]; then
+    if [ $exit_code -ne 0 ]; then
         echo "Bad checksum"
         exit 1
     fi
@@ -70,12 +72,12 @@ fi
 
 if [ $allow_experimental = true ] &&
     [ -n "$EXPERIMENTAL_APK_SHA256" ] &&
-    [ ! "$(apk -vv | grep warrior4-appliance-$EXPERIMENTAL_APK_VERSION)" ]
+    [ ! "$(apk info -vv | grep $EXPERIMENTAL_APK_NAME-$EXPERIMENTAL_APK_VERSION)" ]
 then
     patch_by_apk "$EXPERIMENTAL_APK_URL" "$EXPERIMENTAL_APK_SHA256"
 
 elif [ -n "$PATCH_APK_SHA256" ] &&
-    [ ! "$(apk -vv | grep warrior4-appliance-$APK_VERSION)" ]
+    [ ! "$(apk info -vv | grep $APK_NAME-$APK_VERSION)" ]
 then
     patch_by_apk "$APK_URL" "$APK_SHA256"
 fi
