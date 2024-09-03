@@ -389,7 +389,7 @@ impl Manager {
 
     /// Create all the Docker containers (but do not start them)
     fn create_containers(&self) -> anyhow::Result<()> {
-        let containers = vec![
+        let containers = [
             (
                 &self.config.watchtower_name,
                 &self.config.watchtower_creator,
@@ -459,7 +459,7 @@ impl Manager {
     fn start_containers(&self) -> anyhow::Result<()> {
         self.run_pre_start_command()?;
 
-        let containers = vec![&self.config.watchtower_name, &self.config.payload_name];
+        let containers = [&self.config.watchtower_name, &self.config.payload_name];
 
         for (index, name) in containers.iter().enumerate() {
             let percent = (index as f32 / containers.len() as f32 * 100.0) as u8;
@@ -520,7 +520,7 @@ impl Manager {
         tracing::info!("wait for payload");
         self.display_info("Waiting for payload to start");
 
-        let mut command = Command::new(&self.config.payload_pre_start);
+        let mut command = Command::new(&self.config.payload_wait_ready);
         let output = crate::logging::log_command_output(&mut command)?;
 
         if !output.status.success() {

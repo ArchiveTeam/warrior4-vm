@@ -1,5 +1,5 @@
 [workspace]
-
+resolver = "2"
 members = [
     "crates/warrior4-appliance",
     "crates/warrior4-appliance-display",
