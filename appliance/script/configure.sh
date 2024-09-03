@@ -29,9 +29,15 @@ rc-update add dnscrypt-proxy default
 echo "warrior" > /etc/hostname
 echo -e "archiveteam\narchiveteam" | passwd root
 
+# Warrior dependencies
 rc-update add docker default
-rc-update add open-vm-tools boot
 
+# Virtual machine guest tools
+rc-update add open-vm-tools boot
+rc-update add qemu-guest-agent boot
+rc-update add virtualbox-guest-additions boot
+
+# Warrior stuff
 chmod 755 /etc/init.d/warrior4-appliance
 chmod 755 /etc/init.d/warrior4-appliance-display
 chmod 755 /usr/bin/warrior4-display-logs
