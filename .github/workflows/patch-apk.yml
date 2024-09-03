@@ -1,4 +1,4 @@
-name: Create patch tarball
+name: Create patch apk
 on: workflow_dispatch
 
 jobs:
@@ -18,10 +18,12 @@ jobs:
         run: rustup target add x86_64-unknown-linux-musl
       - name: Cache Rust
         uses: Swatinem/rust-cache@v2
+      - name: Install fpm
+        run: gem install fpm
       - name: Running build script
-        run: ./script/patch-tarball.sh
-      - name: Save tarball
+        run: ./script/apk.sh
+      - name: Save apk
         uses: actions/upload-artifact@v3
         with:
-          name: "warrior4-image-${{ steps.set_build_timestamp.outputs.build_timestamp }}"
+          name: "warrior4-apk-${{ steps.set_build_timestamp.outputs.build_timestamp }}"
           path: output/

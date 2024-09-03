@@ -27,16 +27,58 @@ Overview of what happens on boot up:
 
 Building the appliance is a two step process. Scripts are provided that does mostly everything automatically. A network connection is required as additional software needs to be downloaded.
 
+* For scripts using Python, Python 3.11 or greater is required
+* Builds require a Linux environment
+
+### Common tasks for scripts using Docker
+
+Create the build environment image:
+
+```sh
+python script/docker.py init
+```
+
+After building, unregister the image and clean up the Docker cache:
+
+```sh
+python script/docker.py remove
+docker image prune
+```
+
 ### Build disk image
 
-Important: Building the disk image is recommended to be done in a virtual machine. The custom Alpine image script requires root access and may mess up your system.
+Important: Building the disk image is recommended to be done in a virtual machine or container. The custom Alpine image script requires root access and may mess up your system.
+
+### Using Docker
+
+Attention: Using Docker to build is not supported and isn't working unless you run things with effectively root access.
+
+The Alpine build scripts require a Linux NBD. Enable nbd on the Docker host:
+
+```sh
+sudo modprobe nbd
+```
+
+On an unused device, give permissions as needed. (In this command, we give everyone read/write access. Alternatively, you can change the owner/group of the device.):
+
+```sh
+sudo chmod o+rw /dev/nbd6
+```
+
+Build in the container with the device:
+
+```sh
+python script/docker.py build --device "/dev/nbd6"
+```
+
+### Manually
 
 These steps have been tested on Ubuntu 22.04.
 
 Install the dependencies:
 
 ```sh
-apt install build-essential musl-tools qemu-utils curl rsync
+apt install build-essential musl-tools qemu-utils curl wget rsync
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 rustup target add x86_64-unknown-linux-musl
 ```
@@ -70,7 +112,7 @@ Ensure the vdi file from the previous is in the `output` directory.
 Then run:
 
 ```sh
-./script/package.sh
+python ./script/package.py
 ```
 
 The ova file should be generated in the `output` directory. That file is the virtual appliance. You may delete the vdi file now.
@@ -81,11 +123,27 @@ Switch to tty3 console (using guest keyboard) using either Alt+RightArrow or Alt
 
 ## Creating patches
 
-The `appliance/script/patch.sh` is downloaded by the VM from the git "patch" branch and executed to patch the system. It first backs up the existing executables and then uses a tar archive to overwrite the executables.
+The `appliance/script/patch.sh` is downloaded by the VM from the git "patch" branch and executed to patch the system. It first backs up the existing executables, applies any system modifications, and installs an Alpine package (.apk) to install newer executables.
 
-To create the tar archive, run `script/patch-tarball.sh` to generate it. The tar archive is referred to as the patch tarball.
+### Using Docker
 
-To test the tarball, you can manually edit and execute the patch script. You can start up a local web server using something like `python3 -m http.server`. If you are using VirtualBox NAT, 10.0.2.2 is forwarded to your host's localhost interface. While inside the virtual machine, download your dev patch and execute it. Adjust commands as needed:
+Set up the Docker image, then run:
+
+```sh
+python script/docker.py apk
+```
+
+### Manually
+
+Within a virtual machine, run:
+
+```sh
+script/apk.sh
+```
+
+### Testing the patch
+
+To test the apk and patching process, you can manually edit and execute the patch script. You can start up a local web server using something like `python3 -m http.server`. If you are using VirtualBox NAT, 10.0.2.2 is forwarded to your host's localhost interface. While inside the virtual machine, download your dev patch and execute it. Adjust commands as needed:
 
 ```sh
 touch /etc/warrior4-patch-experimental

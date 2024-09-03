@@ -6,13 +6,14 @@ set -e
 
 STATE_PATH="/var/lib/warrior4-appliance/patch-version"
 BACKUP_TAR_PATH="/var/lib/warrior4-appliance/warrior4-backup.tar.gz"
-TARBALL_STATE_PATH="/var/lib/warrior4-appliance/patch-tarball-version"
 
-PATCH_TARBALL_URL="https://warriorhq.archiveteam.org/downloads/warrior4/patch/warrior4-patch-20000101-000000.tar.gz"
-PATCH_TARBALL_SHA256=""
+APK_URL="https://warriorhq.archiveteam.org/downloads/warrior4/patch/warrior4-appliance-4.0-20000101-000000.apk"
+APK_VERSION="4.0-20000101-000000"
+APK_SHA256=""
 
-EXPERIMENTAL_PATCH_TARBALL_URL="http://10.0.0.2:8000/output/warrior4-patch-20000101-000000.tar.gz"
-EXPERIMENTAL_PATCH_TARBALL_SHA256=""
+EXPERIMENTAL_APK_URL="http://10.0.0.2:8000/output/warrior4-appliance-4.0-20000101-000000.apk"
+EXPERIMENTAL_APK_VERSION="4.0-20000101-000000"
+EXPERIMENTAL_APK_SHA256=""
 
 if [ ! -f /etc/warrior4-env ]; then
     echo "This does not appear to be the warrior4 image. Exiting for safety."
@@ -26,17 +27,12 @@ else
 fi
 
 system_version=0
-system_tarball_version=""
 
 if [ -f "$STATE_PATH" ]; then
     system_version=$(cat $STATE_PATH)
 fi
-if [ -f "$TARBALL_STATE_PATH" ]; then
-    system_tarball_version=$(cat $TARBALL_STATE_PATH)
-fi
 
 echo "System patch version number: $system_version"
-echo "System tarball version: $system_tarball_version"
 echo "Allow experimental: $allow_experimental"
 
 backup_binaries() {
@@ -49,11 +45,11 @@ backup_binaries() {
     echo "Binaries backup done"
 }
 
-patch_by_tarball() {
-    echo "Downloading tarball..."
+patch_by_apk() {
+    echo "Downloading apk..."
     # This is BusyBox's wget
-    wget "$1" -O /tmp/warrior4-patch.tar.gz
-    echo "$2 /tmp/warrior4-patch.tar.gz" > /tmp/warrior4-patch-checksum
+    wget "$1" -O /tmp/warrior4-patch.apk
+    echo "$2 /tmp/warrior4-patch.apk" > /tmp/warrior4-patch-checksum
     sha256sum -c /tmp/warrior4-patch-checksum
     exit_code=$?
 
@@ -62,12 +58,10 @@ patch_by_tarball() {
         exit 1
     fi
 
-    echo "Applying tarball"
-    tar -x -z -f /tmp/warrior4-patch.tar.gz -C /
+    echo "Applying apk"
+    apk add --allow-untrusted /tmp/warrior4-patch.apk
 
-    echo "$2" > $TARBALL_STATE_PATH
-
-    echo "Patching by tarball done"
+    echo "Patching by apk done"
 }
 
 if [ ! -f "$BACKUP_TAR_PATH" ]; then
@@ -75,15 +69,15 @@ if [ ! -f "$BACKUP_TAR_PATH" ]; then
 fi
 
 if [ $allow_experimental = true ] &&
-    [ -n "$EXPERIMENTAL_PATCH_TARBALL_SHA256" ] &&
-    [ "$EXPERIMENTAL_PATCH_TARBALL_SHA256" != "$system_tarball_version"]
+    [ -n "$EXPERIMENTAL_APK_SHA256" ] &&
+    [ ! "$(apk -vv | grep warrior4-appliance-$EXPERIMENTAL_APK_VERSION)" ]
 then
-    patch_by_tarball "$EXPERIMENTAL_PATCH_TARBALL_URL" "$EXPERIMENTAL_PATCH_TARBALL_SHA256"
+    patch_by_apk "$EXPERIMENTAL_APK_URL" "$EXPERIMENTAL_APK_SHA256"
 
-elif [ -n "$PATCH_TARBALL_SHA256" ] &&
-    [ "$PATCH_TARBALL_SHA256" != "$system_tarball_version" ]
+elif [ -n "$PATCH_APK_SHA256" ] &&
+    [ ! "$(apk -vv | grep warrior4-appliance-$APK_VERSION)" ]
 then
-    patch_by_tarball "$PATCH_TARBALL_URL" "$PATCH_TARBALL_SHA256"
+    patch_by_apk "$APK_URL" "$APK_SHA256"
 fi
 
 echo "Done patching"
