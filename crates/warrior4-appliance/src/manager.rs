@@ -88,9 +88,12 @@ impl Manager {
 
         self.load_state().context("loading system state failed")?;
 
-        if let Err(error) = self.patch_system().context("patching the system failed") {
+        if let Err(error) = self.patch_system() {
             tracing::warn!(?error, "skipping patch system");
-            self.display_warning(format!("{:#}", error));
+            self.display_warning(format!(
+                "Patching is skipped because it is unavailable or has an error. It will be retried later.\n\nError: {:#}",
+                error
+            ));
             std::thread::sleep(Duration::from_secs(5));
         }
 
