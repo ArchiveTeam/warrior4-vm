@@ -143,11 +143,10 @@ script/apk.sh
 
 ### Testing the patch
 
-To test the apk and patching process, you can manually edit and execute the patch script. You can start up a local web server using something like `python3 -m http.server`. If you are using VirtualBox NAT, 10.0.2.2 is forwarded to your host's localhost interface. While inside the virtual machine, download your dev patch and execute it. Adjust commands as needed:
+To test the apk and patching process, you can configure the option `patch_script_url` within the `/etc/warrior4-appliance.toml` file of the virtual machine. You can start up a local web server on the host using something like `python3 -m http.server`. If you are using VirtualBox NAT, 10.0.2.2 is forwarded to your host's localhost interface.
 
-```sh
-touch /etc/warrior4-patch-experimental
-wget http://10.0.2.2:8000/appliance/script/patch.sh -O patch.sh
-chmod +x patch.sh
-./patch.sh
+Example config value:
+
+```toml
+patch_script_url = "http://10.0.2.2:8000/appliance/script/patch.sh"
 ```

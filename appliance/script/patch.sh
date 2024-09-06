@@ -1,6 +1,8 @@
 #!/bin/sh
 # This script is downloaded and run by the warrior4-appliance service to patch
-# the live system during start up of the virtual machine
+# the live system during start up of the virtual machine.
+# Where this file is downloaded from is configured within the config
+# file of /etc/warrior4-appliance.toml
 
 set -e
 
@@ -8,24 +10,14 @@ STATE_PATH="/var/lib/warrior4-appliance/patch-version"
 BACKUP_TAR_PATH="/var/lib/warrior4-appliance/warrior4-backup.tar.gz"
 
 APK_NAME="warrior4-appliance"
-APK_VERSION="4.0-20000101-000000"
+APK_VERSION="4.0.1-20240906-204244"
 APK_URL="https://warriorhq.archiveteam.org/downloads/warrior4/patch/$APK_NAME-$APK_VERSION.apk"
-APK_SHA256=""
-
-EXPERIMENTAL_APK_NAME="warrior4-appliance"
-EXPERIMENTAL_APK_VERSION="4.0-20240101-120100"
-EXPERIMENTAL_APK_URL="http://10.0.2.2:8000/output/$EXPERIMENTAL_APK_NAME-$EXPERIMENTAL_APK_VERSION.apk"
-EXPERIMENTAL_APK_SHA256=""
+#APK_URL="http://10.0.2.2:8000/output/$APK_NAME-$APK_VERSION.apk"
+APK_SHA256="46375b6e600dd534e22cbd3283b72d5a76dcd699f17c6bd4b2ed882c7155c95c"
 
 if [ ! -f /etc/warrior4-env ]; then
     echo "This does not appear to be the warrior4 image. Exiting for safety."
     exit 1
-fi
-
-if [ -f /etc/warrior4-patch-experimental ]; then
-    allow_experimental=true
-else
-    allow_experimental=false
 fi
 
 system_version=0
@@ -35,7 +27,6 @@ if [ -f "$STATE_PATH" ]; then
 fi
 
 echo "System patch version number: $system_version"
-echo "Allow experimental: $allow_experimental"
 
 backup_binaries() {
     echo "Backing up binaries"
@@ -70,13 +61,7 @@ if [ ! -f "$BACKUP_TAR_PATH" ]; then
     backup_binaries
 fi
 
-if [ $allow_experimental = true ] &&
-    [ -n "$EXPERIMENTAL_APK_SHA256" ] &&
-    [ ! "$(apk info -vv | grep $EXPERIMENTAL_APK_NAME-$EXPERIMENTAL_APK_VERSION)" ]
-then
-    patch_by_apk "$EXPERIMENTAL_APK_URL" "$EXPERIMENTAL_APK_SHA256"
-
-elif [ -n "$PATCH_APK_SHA256" ] &&
+if [ -n "$APK_SHA256" ] &&
     [ ! "$(apk info -vv | grep $APK_NAME-$APK_VERSION)" ]
 then
     patch_by_apk "$APK_URL" "$APK_SHA256"
