@@ -1,7 +1,7 @@
 # Common variables and configuration values
 
 APP_NAME="archiveteam-warrior"
-APP_VERSION="4.1-beta.1"
+APP_VERSION="4.1"
 OUTPUT_DIR="output"
 QCOW2_DISK_FILENAME="warrior4-image.qcow2"
 VDI_DISK_FILENAME="warrior4-image.vdi"
