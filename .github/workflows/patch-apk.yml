@@ -23,7 +23,7 @@ jobs:
       - name: Running build script
         run: ./script/apk.sh
       - name: Save apk
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: "warrior4-apk-${{ steps.set_build_timestamp.outputs.build_timestamp }}"
           path: output/

@@ -27,7 +27,7 @@ jobs:
           output/warrior4-image.vdi
           output/warrior4-image.vmdk
       - name: Save disk images
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: "warrior4-image-${{ steps.set_build_timestamp.outputs.build_timestamp }}"
           path: output/
