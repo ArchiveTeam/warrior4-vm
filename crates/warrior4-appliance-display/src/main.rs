@@ -117,7 +117,7 @@ fn handle_ipc_event(ipc_event: Request, cursive_sender: CursiveSender) -> anyhow
         | Request::Error { text } => {
             cursive_sender
                 .send(Box::new(|cursive| {
-                    show_ready(cursive, text);
+                    show_message(cursive, text);
                 }))
                 .map_err(|e| anyhow::anyhow!(e.to_string()))?;
         }
@@ -139,6 +139,9 @@ fn add_status_menu(cursive: &mut Cursive) {
             })
             .leaf("Docker", |c| {
                 show_command_dialog(&["docker", "ps", "-a"], c);
+            })
+            .leaf("Filesystem usage", |c| {
+                show_command_dialog(&["df", "-h"], c);
             }),
     );
 }
@@ -221,11 +224,6 @@ fn show_progress(cursive: &mut Cursive, text: String, percent: u8) {
     cursive.call_on_name(INFO_PROGRESS_BAR, |view: &mut ProgressBar| {
         view.set_value(percent.into());
     });
-}
-
-/// Show the message that tells the user the web interface is ready to log in
-fn show_ready(cursive: &mut Cursive, text: String) {
-    show_message(cursive, text);
 }
 
 /// Returns whether the top-most layer is the info text panel
