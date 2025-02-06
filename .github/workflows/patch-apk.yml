@@ -19,7 +19,7 @@ jobs:
       - name: Cache Rust
         uses: Swatinem/rust-cache@v2
       - name: Install fpm
-        run: gem install fpm
+        run: gem install --user-install fpm
       - name: Running build script
         run: ./script/apk.sh
       - name: Save apk
