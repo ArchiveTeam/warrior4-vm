@@ -3,21 +3,25 @@
 mod api;
 mod ipc;
 
-use std::{net::SocketAddr, sync::mpsc::Receiver};
+use std::{net::SocketAddr, path::Path, sync::mpsc::Receiver};
 
 use api::Request;
 use clap::Parser;
 use cursive::{
     direction::Orientation,
     event::Key,
+    menu::Tree,
     reexports::crossbeam_channel::Sender,
     view::{Nameable, Scrollable},
-    views::{Dialog, HideableView, LinearLayout, NamedView, Panel, ProgressBar, TextView},
+    views::{
+        Dialog, HideableView, LayerPosition, LinearLayout, NamedView, Panel, ProgressBar, TextView,
+    },
     Cursive,
 };
 use vt::{Console, VtNumber};
 
 static COMMON_TITLE: &str = "ArchiveTeam Warrior 4th Edition";
+static INFO_TEXT_PANEL: &str = "info_text_panel";
 static INFO_TEXT_VIEW: &str = "info_text_view";
 static INFO_PROGRESS_BAR: &str = "info_progress_bar";
 static INFO_PROGRESS_BAR_HIDEABLE: &str = "info_progress_bar_hideable";
@@ -44,12 +48,17 @@ fn main() -> anyhow::Result<()> {
 
     let mut cursive = cursive::default();
 
-    add_info(&mut cursive);
+    add_status_menu(&mut cursive);
+    add_logs_menu(&mut cursive);
     add_help(&mut cursive);
     add_info_panel(&mut cursive);
     set_up_ipc(&mut cursive, args.ipc_address);
 
-    cursive.add_global_callback(Key::Esc, |c| c.select_menubar());
+    cursive.add_global_callback(Key::Esc, |c| {
+        if is_current_info_layer(c) {
+            c.select_menubar();
+        }
+    });
     cursive.run();
 
     Ok(())
@@ -117,20 +126,38 @@ fn handle_ipc_event(ipc_event: Request, cursive_sender: CursiveSender) -> anyhow
     Ok(())
 }
 
-/// Add the Info menu item
-fn add_info(cursive: &mut Cursive) {
-    cursive.menubar().add_leaf("Info", |c| {
-        c.add_layer(
-            Dialog::around(
-                TextView::new(generate_info_text())
-                    .no_wrap()
-                    .scrollable()
-                    .scroll_x(true),
-            )
-            .title("Advanced Information")
-            .dismiss_button("Close"),
-        )
-    });
+/// Add the Status menu item
+fn add_status_menu(cursive: &mut Cursive) {
+    cursive.menubar().add_subtree(
+        "Status",
+        Tree::new()
+            .leaf("IP address", |c| {
+                show_command_dialog(&["ip", "addr", "show"], c);
+            })
+            .leaf("Services", |c| {
+                show_command_dialog(&["rc-status", "--all"], c);
+            })
+            .leaf("Docker", |c| {
+                show_command_dialog(&["docker", "ps", "-a"], c);
+            }),
+    );
+}
+
+/// Add the Logs menu item
+fn add_logs_menu(cursive: &mut Cursive) {
+    cursive.menubar().add_subtree(
+        "Logs",
+        Tree::new()
+            .leaf("System", |c| {
+                show_log_dialog(Path::new("/var/log/messages"), c);
+            })
+            .leaf("Docker", |c| {
+                show_log_dialog(Path::new("/var/log/docker.log"), c);
+            })
+            .leaf("Warrior appliance", |c| {
+                show_log_dialog(Path::new("/var/log/warrior4-appliance.log"), c);
+            }),
+    );
 }
 
 /// Add the help menu item
@@ -157,7 +184,11 @@ fn add_info_panel(cursive: &mut Cursive) {
     layout.add_child(text_view);
     layout.add_child(HideableView::new(progress_bar).with_name(INFO_PROGRESS_BAR_HIDEABLE));
 
-    cursive.add_layer(Panel::new(layout).title(COMMON_TITLE));
+    cursive.add_layer(
+        Panel::new(layout)
+            .title(COMMON_TITLE)
+            .with_name(INFO_TEXT_PANEL),
+    );
 }
 
 /// Update the message displayed to the given text
@@ -197,34 +228,50 @@ fn show_ready(cursive: &mut Cursive, text: String) {
     show_message(cursive, text);
 }
 
-/// Returns the output text for the Info menu item
-fn generate_info_text() -> String {
-    let programs = vec![
-        vec!["ip", "addr", "show"],
-        vec!["rc-status", "--all"],
-        vec!["docker", "ps", "-a"],
-    ];
-
-    let mut text = String::new();
-
-    for args in programs {
-        text.push_str(&args.join(" "));
-        text.push_str("\n\n");
-
-        let (name, args) = args.split_first().unwrap();
-        let mut command = std::process::Command::new(name);
-
-        for arg in args {
-            command.arg(arg);
+/// Returns whether the top-most layer is the info text panel
+fn is_current_info_layer(cursive: &mut Cursive) -> bool {
+    if let Some(view) = cursive.screen().get(LayerPosition::FromFront(0)) {
+        if let Some(view) = view.downcast_ref::<NamedView<Panel<LinearLayout>>>() {
+            view.name() == INFO_TEXT_PANEL
+        } else {
+            false
         }
+    } else {
+        false
+    }
+}
 
-        match command.output() {
-            Ok(output) => text.push_str(&String::from_utf8_lossy(&output.stdout)),
-            Err(error) => text.push_str(&format!("{:#}", error)),
-        }
+/// Shows a dialog window containing the contents of a file
+fn show_log_dialog(path: &Path, cursive: &mut Cursive) {
+    let title = path.to_string_lossy();
+    let content = std::fs::read_to_string(path).unwrap_or_else(|e| e.to_string());
 
-        text.push_str("\n\n");
+    cursive.add_layer(
+        Dialog::around(TextView::new(content).no_wrap().scrollable().scroll_x(true))
+            .title(title)
+            .dismiss_button("Close"),
+    );
+}
+
+/// Shows a dialog window containing the output of a command
+fn show_command_dialog(args: &[&str], cursive: &mut Cursive) {
+    let title = args.join(" ");
+
+    let (name, args) = args.split_first().unwrap();
+    let mut command = std::process::Command::new(name);
+
+    for arg in args {
+        command.arg(arg);
     }
 
-    text
+    let content = match command.output() {
+        Ok(output) => String::from_utf8_lossy(&output.stdout).to_string(),
+        Err(error) => error.to_string(),
+    };
+
+    cursive.add_layer(
+        Dialog::around(TextView::new(content).no_wrap().scrollable().scroll_x(true))
+            .title(title)
+            .dismiss_button("Close"),
+    );
 }
