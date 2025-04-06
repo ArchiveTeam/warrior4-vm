@@ -10,12 +10,14 @@ use anyhow::Context;
 use crate::{config::AppConfig, ipc::DisplayIPC, state::State};
 
 const PATCH_FILE_PATH: &str = "/tmp/warrior4-appliance-patch";
+const MAX_UNHEALTHY_TIME: Duration = Duration::from_secs(60 * 15);
 
 pub struct Manager {
     config: AppConfig,
     state: State,
     display_ipc: DisplayIPC,
     payload_crashed: bool,
+    unheathy_timestamp: Option<Instant>,
 }
 
 impl Manager {
@@ -27,6 +29,7 @@ impl Manager {
             state,
             display_ipc,
             payload_crashed: false,
+            unheathy_timestamp: None,
         }
     }
 
@@ -610,7 +613,20 @@ impl Manager {
 
         tracing::trace!(status, health, "check payload health");
 
-        Ok(status == "running" && health == "unhealthy")
+        if status == "running" && health == "unhealthy" {
+            // The container's health check can be unreliable and may recover after some time
+            if let Some(timestamp) = self.unheathy_timestamp {
+                Ok(timestamp.elapsed() > MAX_UNHEALTHY_TIME)
+            } else {
+                tracing::debug!("first seen unhealthy container");
+                self.unheathy_timestamp = Some(Instant::now());
+
+                Ok(false)
+            }
+        } else {
+            self.unheathy_timestamp = None;
+            Ok(false)
+        }
     }
 
     /// Returns whether the payload is requesting a machine restart
