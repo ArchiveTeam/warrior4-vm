@@ -12,6 +12,8 @@ use cursive::{
     event::Key,
     menu::Tree,
     reexports::crossbeam_channel::Sender,
+    theme::{Effect, Style},
+    utils::markup::StyledString,
     view::{Nameable, Scrollable},
     views::{
         Dialog, HideableView, LayerPosition, LinearLayout, NamedView, Panel, ProgressBar, TextView,
@@ -25,6 +27,7 @@ static INFO_TEXT_PANEL: &str = "info_text_panel";
 static INFO_TEXT_VIEW: &str = "info_text_view";
 static INFO_PROGRESS_BAR: &str = "info_progress_bar";
 static INFO_PROGRESS_BAR_HIDEABLE: &str = "info_progress_bar_hideable";
+static COMMAND_OUTPUT_TEXT_VIEW: &str = "command_output_text_view";
 
 /// Command line arguments
 #[derive(Parser, Debug)]
@@ -121,6 +124,13 @@ fn handle_ipc_event(ipc_event: Request, cursive_sender: CursiveSender) -> anyhow
                 }))
                 .map_err(|e| anyhow::anyhow!(e.to_string()))?;
         }
+        Request::CommandOutput { text } => {
+            cursive_sender
+                .send(Box::new(|cursive| {
+                    show_command_output(cursive, text);
+                }))
+                .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+        }
     }
 
     Ok(())
@@ -182,9 +192,13 @@ fn add_info_panel(cursive: &mut Cursive) {
         .with_name(INFO_TEXT_VIEW)
         .scrollable();
     let progress_bar = ProgressBar::new().with_name(INFO_PROGRESS_BAR);
+    let command_output = TextView::empty()
+        .with_name(COMMAND_OUTPUT_TEXT_VIEW)
+        .scrollable();
 
     let mut layout = LinearLayout::new(Orientation::Vertical);
     layout.add_child(text_view);
+    layout.add_child(command_output);
     layout.add_child(HideableView::new(progress_bar).with_name(INFO_PROGRESS_BAR_HIDEABLE));
 
     cursive.add_layer(
@@ -223,6 +237,21 @@ fn show_progress(cursive: &mut Cursive, text: String, percent: u8) {
 
     cursive.call_on_name(INFO_PROGRESS_BAR, |view: &mut ProgressBar| {
         view.set_value(percent.into());
+    });
+}
+
+/// Update the command output displayed to the given text
+fn show_command_output(cursive: &mut Cursive, text: String) {
+    cursive.call_on_name(COMMAND_OUTPUT_TEXT_VIEW, |view: &mut TextView| {
+        if text.is_empty() {
+            view.set_content("");
+        } else {
+            let content = StyledString::styled(
+                format!("\n{}", &text),
+                Style::inherit_parent().combine(Effect::Dim),
+            );
+            view.set_content(content);
+        }
     });
 }
 

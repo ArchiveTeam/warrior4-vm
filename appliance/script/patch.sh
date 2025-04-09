@@ -61,6 +61,7 @@ restart() {
     echo "The system is rebooting to apply changes"
     sleep 5
     reboot
+    sleep 60
 }
 
 if [ ! -f "$BACKUP_TAR_PATH" ]; then
