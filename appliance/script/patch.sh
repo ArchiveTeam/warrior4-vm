@@ -57,6 +57,12 @@ patch_by_apk() {
     echo "Patching by apk done"
 }
 
+restart() {
+    echo "The system is rebooting to apply changes"
+    sleep 5
+    reboot
+}
+
 if [ ! -f "$BACKUP_TAR_PATH" ]; then
     backup_binaries
 fi
@@ -65,6 +71,7 @@ if [ -n "$APK_SHA256" ] &&
     [ ! "$(apk info -vv | grep $APK_NAME-$APK_VERSION)" ]
 then
     patch_by_apk "$APK_URL" "$APK_SHA256"
+    restart
 fi
 
 echo "Done patching"

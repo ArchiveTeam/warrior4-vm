@@ -26,4 +26,6 @@ pub enum Request {
     Warning { text: String },
     /// Error message
     Error { text: String },
+    /// Output of a command
+    CommandOutput { text: String }
 }

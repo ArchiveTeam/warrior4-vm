@@ -39,6 +39,11 @@ impl DisplayIPC {
         Ok(())
     }
 
+    pub fn send_command_output<S: Into<String>>(&self, text: S) -> anyhow::Result<()> {
+        self.send_doc(IPCRequest::CommandOutput { text: text.into() })?;
+        Ok(())
+    }
+
     pub fn send_ready<S: Into<String>>(&self, text: S) -> anyhow::Result<()> {
         self.send_doc(IPCRequest::ReadyInfo { text: text.into() })?;
         Ok(())

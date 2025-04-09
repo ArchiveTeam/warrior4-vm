@@ -291,6 +291,14 @@ impl Manager {
         }
     }
 
+    /// Send a command output text message to the display service
+    fn display_command_output<S: Into<String>>(&self, text: S) {
+        match self.display_ipc.send_command_output(text) {
+            Ok(_) => {}
+            Err(error) => tracing::error!(?error, "display ipc error"),
+        }
+    }
+
     /// Send a finished initialization message to the display service
     fn display_ready<S: Into<String>>(&self, text: S) {
         match self.display_ipc.send_ready(text) {
@@ -356,13 +364,17 @@ impl Manager {
             self.display_info("Patching the system");
 
             let mut command = std::process::Command::new(PATCH_FILE_PATH);
-            let output = crate::logging::log_command_output(&mut command)?;
+            let status = crate::logging::monitor_command_output(&mut command, |output| {
+                let text = String::from_utf8_lossy(output);
+                self.display_command_output(crate::logging::get_last_line(&text));
+            })?;
 
-            if !output.status.success() {
-                anyhow::bail!("patch program exited with exit status {}", output.status);
+            if !status.success() {
+                anyhow::bail!("patch program exited with exit status {}", status);
             }
 
             tracing::info!("patching success");
+            self.display_command_output("");
         }
 
         Ok(())
@@ -428,14 +440,16 @@ impl Manager {
             );
 
             let mut command = Command::new(creator);
-            let output = crate::logging::log_command_output(&mut command)?;
+            let status = crate::logging::monitor_command_output(&mut command, |output| {
+                let text = String::from_utf8_lossy(output);
+                self.display_command_output(crate::logging::get_last_line(&text));
+            })?;
 
-            if !output.status.success() {
-                anyhow::bail!(
-                    "container creator program exited with status {}",
-                    output.status
-                );
+            if !status.success() {
+                anyhow::bail!("container creator program exited with status {}", status);
             }
+
+            self.display_command_output("");
         }
 
         tracing::info!("containers created");
@@ -446,10 +460,7 @@ impl Manager {
     /// Start the Watchtower run-once container to force the containers to update
     fn update_containers(&self) -> anyhow::Result<()> {
         tracing::info!("update containers");
-        self.display_progress(
-            "Updating containers\n\nPlease wait. This may take a while.",
-            0,
-        );
+        self.display_info("Updating containers\n\nPlease wait. This may take a while.");
 
         let (output1, output2) =
             crate::container::run_container_foreground(&self.config.watchtower_run_once_name)?;
