@@ -10,10 +10,10 @@ STATE_PATH="/var/lib/warrior4-appliance/patch-version"
 BACKUP_TAR_PATH="/var/lib/warrior4-appliance/warrior4-backup.tar.gz"
 
 APK_NAME="warrior4-appliance"
-APK_VERSION="4.1-20250206-202602"
+APK_VERSION="4.1-20250410-103938"
 APK_URL="https://warriorhq.archiveteam.org/downloads/warrior4/patch/$APK_NAME-$APK_VERSION.apk"
 #APK_URL="http://10.0.2.2:8000/output/$APK_NAME-$APK_VERSION.apk"
-APK_SHA256="36c02142f399f50be19c17839cda06157bee246d37c1a5cf7464f715692b4b83"
+APK_SHA256="927aef499ad625ad37cfc9c90fbc7e3d1934760fc03b54b5a585072bd1402720"
 
 if [ ! -f /etc/warrior4-env ]; then
     echo "This does not appear to be the warrior4 image. Exiting for safety."
