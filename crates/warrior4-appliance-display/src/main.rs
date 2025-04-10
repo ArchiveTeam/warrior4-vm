@@ -53,6 +53,7 @@ fn main() -> anyhow::Result<()> {
 
     add_status_menu(&mut cursive);
     add_logs_menu(&mut cursive);
+    add_actions_menu(&mut cursive);
     add_help(&mut cursive);
     add_info_panel(&mut cursive);
     set_up_ipc(&mut cursive, args.ipc_address);
@@ -169,6 +170,20 @@ fn add_logs_menu(cursive: &mut Cursive) {
             })
             .leaf("Warrior appliance", |c| {
                 show_log_dialog(Path::new("/var/log/warrior4-appliance.log"), c);
+            }),
+    );
+}
+
+/// Add the actions menu item
+fn add_actions_menu(cursive: &mut Cursive) {
+    cursive.menubar().add_subtree(
+        "Actions",
+        Tree::new()
+            .leaf("Restart...", |c| {
+                show_action_dialog("reboot", c);
+            })
+            .leaf("Shut down...", |c| {
+                show_action_dialog("poweroff", c);
             }),
     );
 }
@@ -301,4 +316,44 @@ fn show_command_dialog(args: &[&str], cursive: &mut Cursive) {
             .title(title)
             .dismiss_button("Close"),
     );
+}
+
+/// Shows a dialog window for performing actions (reboot, etc.)
+fn show_action_dialog(action: &str, cursive: &mut Cursive) {
+    let title;
+    let text;
+    let command;
+
+    match action {
+        "reboot" => {
+            title = "Restart";
+            text = "Restart the system now?\n\nAny unfinished tasks will be lost.";
+            command = "reboot";
+        }
+        "poweroff" => {
+            title = "Shut down";
+            text = "Shut down the system now?\n\nAny unfinished tasks will be lost.";
+            command = "poweroff";
+        }
+        _ => {
+            unimplemented!()
+        }
+    }
+
+    cursive.add_layer(
+        Dialog::around(TextView::new(text))
+            .title(title)
+            .dismiss_button("Cancel")
+            .button(title, move |c| {
+                c.pop_layer();
+
+                if is_warrior_vm() {
+                    let _ = std::process::Command::new(&command).status();
+                }
+            }),
+    );
+}
+
+fn is_warrior_vm() -> bool {
+    std::fs::exists("/etc/warrior4-env").unwrap_or_default()
 }
