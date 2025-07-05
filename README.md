@@ -6,7 +6,7 @@ This repository contains the [Warrior](https://wiki.archiveteam.org/index.php/Ar
 
 🐋 If you are looking to run the warrior in a Docker container, use the image available from [warrior-dockerfile](https://github.com/ArchiveTeam/warrior-dockerfile).
 
-If you want to see the older version 3, see [Ubuntu-Warrior](https://github.com/ArchiveTeam/Ubuntu-Warrior).
+If you want to see the older version 3, see [Ubuntu-Warrior](https://github.com/ArchiveTeam/Ubuntu-Warrior). For the web user interface that manages projects, see [seesaw-kit](https://github.com/ArchiveTeam/seesaw-kit/).
 
 ## Support
 
@@ -50,6 +50,30 @@ When using NAT network type, port forwarding is required to access the web inter
 | Name | Host address | Host port | VM address | VM port |
 | ---- | ------------ | --------- | ------------- | ---------- |
 | Web Interface | 127.0.0.1 | 8001 | | 8001 |
+
+## Frequently asked questions
+
+**Q. How do I get my keyboard or mouse untrapped in the virtual machine window?**
+
+A. On VirtualBox, press the right-side Alt key.
+
+**Q. I run a Docker container and a VM. If I log in to the container and log in to the VM, why are the environments vastly different?**
+
+A. This VM does not directly run what is listed in the Dockerfile. The VM actually is an operating system shell that runs and manages Docker containers (which uses the images genereated by the Dockerfile).
+
+Technically, this VM can run any Docker container at all!
+
+**Q. What is the purpose of the VM if I can run Docker myself?**
+
+A. If you rather run the Docker containers yourself, you may do so. The purpose of the VM is to ensure that users get a consistent environment that is difficult for users to accidentally misconfigure.
+
+**Q. How do I log in (for troubleshooting/debugging)?**
+
+A. Use the LeftAlt+RightArrow and LeftAlt+LeftArrow keys to switch terminals. The login screen will tell you the password.
+
+Logging files are placed in `/var/log/`.
+
+Note that you are logged into the VM OS, not the Docker container. Use the Docker tool to log in to the `warrior` container as needed. The container user is `warrior`. Project download data stored in `/data/`.
 
 ## Developer
 
