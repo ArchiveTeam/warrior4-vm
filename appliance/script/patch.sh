@@ -6,7 +6,6 @@
 
 set -e
 
-STATE_PATH="/var/lib/warrior4-appliance/patch-version"
 BACKUP_TAR_PATH="/var/lib/warrior4-appliance/warrior4-backup.tar.gz"
 
 APK_NAME="warrior4-appliance"
@@ -19,14 +18,6 @@ if [ ! -f /etc/warrior4-env ]; then
     echo "This does not appear to be the warrior4 image. Exiting for safety."
     exit 1
 fi
-
-system_version=0
-
-if [ -f "$STATE_PATH" ]; then
-    system_version=$(cat $STATE_PATH)
-fi
-
-echo "System patch version number: $system_version"
 
 backup_binaries() {
     echo "Backing up binaries"
