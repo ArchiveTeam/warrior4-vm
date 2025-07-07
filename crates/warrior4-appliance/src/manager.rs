@@ -44,7 +44,7 @@ impl Manager {
             }
             Err(error) => {
                 tracing::debug!("initialization failed");
-                self.reboot_due_to_error(format!("{:#}", error))?;
+                self.reboot_due_to_error(format!("{error:#}"))?;
             }
         }
 
@@ -54,7 +54,7 @@ impl Manager {
             }
             Err(error) => {
                 tracing::debug!("monitor failed");
-                self.reboot_due_to_error(format!("{:#}", error))?;
+                self.reboot_due_to_error(format!("{error:#}"))?;
             }
         }
 
@@ -72,8 +72,7 @@ impl Manager {
                 }
                 Err(error) => {
                     tracing::error!(?error, "initialization error");
-                    let error_message =
-                        format!("A problem occurred during start up\n\n{:#}", error);
+                    let error_message = format!("A problem occurred during start up\n\n{error:#}");
 
                     let sleep_time = 60 * 2u64.pow(index);
                     tracing::info!(sleep_time, "sleeping");
@@ -94,8 +93,7 @@ impl Manager {
         if let Err(error) = self.patch_system() {
             tracing::warn!(?error, "skipping patch system");
             self.display_warning(format!(
-                "Patching is skipped because it is unavailable or has an error. It will be retried later.\n\nError: {:#}",
-                error
+                "Patching is skipped because it is unavailable or has an error. It will be retried later.\n\nError: {error:#}"
             ));
             std::thread::sleep(Duration::from_secs(5));
         }
@@ -108,7 +106,7 @@ impl Manager {
             .context("updating the containers failed")
         {
             tracing::warn!(?error, "skipping updating containers");
-            self.display_warning(format!("{:#}", error));
+            self.display_warning(format!("{error:#}"));
             std::thread::sleep(Duration::from_secs(5));
         }
 
@@ -132,7 +130,7 @@ impl Manager {
                 }
                 Err(error) => {
                     tracing::error!(?error, "run monitor steps error");
-                    let error_message = format!("A problem occurred\n\n{}", error);
+                    let error_message = format!("A problem occurred\n\n{error}");
 
                     let sleep_time = 60 * 2u64.pow(index);
                     tracing::info!(sleep_time, "sleeping");
@@ -433,8 +431,7 @@ impl Manager {
             let percent = (index as f32 / containers.len() as f32 * 100.0) as u8;
             self.display_progress(
                 format!(
-                    "Downloading and creating container {}\n\nPlease wait. This may take a while.",
-                    name
+                    "Downloading and creating container {name}\n\nPlease wait. This may take a while."
                 ),
                 percent,
             );
@@ -488,7 +485,7 @@ impl Manager {
             }
 
             tracing::info!(name, "start container");
-            self.display_progress(format!("Starting container {}", name), percent);
+            self.display_progress(format!("Starting container {name}"), percent);
 
             let output = crate::container::start_container(name)?;
 

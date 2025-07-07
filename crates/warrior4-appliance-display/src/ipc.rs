@@ -18,7 +18,7 @@ pub fn run(channel: Sender<Request>, address: SocketAddr) -> anyhow::Result<()> 
                 let channel = channel.clone();
                 std::thread::spawn(|| match handle_client(stream, channel) {
                     Ok(_) => {}
-                    Err(error) => eprintln!("{}", error),
+                    Err(error) => eprintln!("{error}"),
                 });
             }
             Err(_) => {

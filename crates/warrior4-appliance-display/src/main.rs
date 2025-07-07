@@ -83,13 +83,13 @@ fn set_up_ipc(cursive: &mut Cursive, address: SocketAddr) {
 
     std::thread::spawn(move || match ipc::run(ipc_sender, address) {
         Ok(_) => {}
-        Err(error) => eprintln!("{}", error),
+        Err(error) => eprintln!("{error}"),
     });
 
     let cursive_cb = cursive.cb_sink().clone();
     std::thread::spawn(|| match process_callbacks(ipc_receiver, cursive_cb) {
         Ok(_) => {}
-        Err(error) => eprintln!("{}", error),
+        Err(error) => eprintln!("{error}"),
     });
 }
 
