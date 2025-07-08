@@ -46,4 +46,7 @@ qemu-img convert -O vdi "$OUTPUT_DIR/$QCOW2_DISK_FILENAME" "$OUTPUT_DIR/$VDI_DIS
 echo "Converting qcow2 to vmdk"
 qemu-img convert -O vmdk "$OUTPUT_DIR/$QCOW2_DISK_FILENAME" "$OUTPUT_DIR/$VMDK_DISK_FILENAME"
 
+echo "Converting qcow2 to vhdx"
+qemu-img convert -O vhdx "$OUTPUT_DIR/$QCOW2_DISK_FILENAME" "$OUTPUT_DIR/$VHDX_DISK_FILENAME"
+
 echo "Build done"

@@ -18,6 +18,7 @@ OUTPUT_DIR = config["OUTPUT_DIR"]
 QCOW2_DISK_FILENAME = config["QCOW2_DISK_FILENAME"]
 VDI_DISK_FILENAME = config["VDI_DISK_FILENAME"]
 VMDK_DISK_FILENAME = config["VMDK_DISK_FILENAME"]
+VHDX_DISK_FILENAME = config["VHDX_DISK_FILENAME"]
 DATE = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d-%H%M%S")
 MACHINE_NAME = f"{APP_NAME}-{APP_VERSION}-package-{DATE}"
 BASENAME = f"{APP_NAME}-v{APP_VERSION}-{DATE}"
@@ -228,9 +229,23 @@ def package_vmdk():
         zip.write(f"{OUTPUT_DIR}/{VMDK_DISK_FILENAME}", name)
 
 
+def package_vhdx():
+    print("Creating VHDX archive")
+
+    with zipfile.ZipFile(
+        f"{OUTPUT_DIR}/{BASENAME}.vhdx.zip",
+        mode="w",
+        compression=zipfile.ZIP_DEFLATED,
+        compresslevel=9,
+    ) as zip:
+        name = f"{BASENAME}.vhdx"
+        zip.write(f"{OUTPUT_DIR}/{VHDX_DISK_FILENAME}", name)
+
+
 package_virtualbox()
 package_qcow2()
 package_vmdk()
+package_vhdx()
 
 
 print("Package done")

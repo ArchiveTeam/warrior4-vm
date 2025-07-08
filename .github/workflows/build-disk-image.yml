@@ -26,6 +26,7 @@ jobs:
           output/warrior4-image.qcow2
           output/warrior4-image.vdi
           output/warrior4-image.vmdk
+          output/warrior4-image.vhdx
       - name: Save disk images
         uses: actions/upload-artifact@v4
         with:
