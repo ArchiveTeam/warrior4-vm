@@ -3,7 +3,7 @@
 mod api;
 mod ipc;
 
-use std::{net::SocketAddr, path::Path, sync::mpsc::Receiver, time::Duration};
+use std::{net::SocketAddr, path::Path, sync::mpsc::Receiver};
 
 use api::Request;
 use clap::Parser;
@@ -57,7 +57,6 @@ fn main() -> anyhow::Result<()> {
     add_help(&mut cursive);
     add_info_panel(&mut cursive);
     set_up_ipc(&mut cursive, args.ipc_address);
-    set_up_redraw(&mut cursive);
 
     cursive.add_global_callback(Key::Esc, |c| {
         if is_current_info_layer(c) {
@@ -76,21 +75,6 @@ fn open_vt(id: u8) -> anyhow::Result<()> {
     console.switch_to(id)?;
 
     Ok(())
-}
-
-/// Manually redraw screen after 5 seconds (to clear any "service started" console messages),
-fn set_up_redraw(cursive: &mut Cursive) {
-    let cursive_cb = cursive.cb_sink().clone();
-    std::thread::spawn(move || {
-        std::thread::sleep(Duration::from_secs(5));
-
-        match cursive_cb.send(Box::new(|s| {
-            s.clear();
-        })) {
-            Ok(_) => todo!(),
-            Err(error) => eprintln!("{error}"),
-        }
-    });
 }
 
 /// Set up threads to process IPC events and update the UI
