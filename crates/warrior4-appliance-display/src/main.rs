@@ -3,7 +3,7 @@
 mod api;
 mod ipc;
 
-use std::{net::SocketAddr, path::Path, sync::mpsc::Receiver};
+use std::{net::SocketAddr, path::Path, sync::mpsc::Receiver, time::Duration};
 
 use api::Request;
 use clap::Parser;
@@ -63,6 +63,14 @@ fn main() -> anyhow::Result<()> {
             c.select_menubar();
         }
     });
+
+    // FIXME: service started messages may be printed over and cause glitched
+    // layout.
+    // cursive doesn't have a force repaint all cells function.
+    // (The clear function does not do this.)
+    eprintln!("Starting...");
+    std::thread::sleep(Duration::from_secs(2));
+
     cursive.run();
 
     Ok(())
@@ -348,7 +356,7 @@ fn show_action_dialog(action: &str, cursive: &mut Cursive) {
                 c.pop_layer();
 
                 if is_warrior_vm() {
-                    let _ = std::process::Command::new(&command).status();
+                    let _ = std::process::Command::new(command).status();
                 }
             }),
     );
