@@ -24,6 +24,7 @@ echo "Copying binaries to staging directory"
 install --preserve-timestamps --mode=755 --verbose -D \
     target/x86_64-unknown-linux-musl/release/warrior4-appliance \
     target/x86_64-unknown-linux-musl/release/warrior4-appliance-display \
+    target/x86_64-unknown-linux-musl/release/warrior4-network-check \
     $STAGING_DIR/usr/bin/
 
 echo "Copying skeleton files to staging directory"

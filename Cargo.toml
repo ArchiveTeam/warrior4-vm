@@ -3,4 +3,5 @@ resolver = "2"
 members = [
     "crates/warrior4-appliance",
     "crates/warrior4-appliance-display",
+    "crates/warrior4-network-check",
 ]

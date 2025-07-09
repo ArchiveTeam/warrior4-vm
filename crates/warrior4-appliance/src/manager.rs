@@ -35,9 +35,6 @@ impl Manager {
 
     /// Start up, monitor the system and containers
     pub fn run(&mut self) -> anyhow::Result<()> {
-        self.wait_for_docker()?;
-        self.wait_for_internet_connection()?;
-
         match self.init_system_with_retry() {
             Ok(_) => {
                 tracing::debug!("initialization completed")
@@ -87,6 +84,9 @@ impl Manager {
     /// Run the initialization steps that creates and starts up the containers
     fn init_system(&mut self) -> anyhow::Result<()> {
         let _span = tracing::info_span!("initialization");
+
+        self.wait_for_docker()?;
+        self.check_internet_connectivity()?;
 
         self.load_state().context("loading system state failed")?;
 
@@ -158,21 +158,21 @@ impl Manager {
         tracing::info!("wait for docker");
         self.display_info("Waiting for Docker to be ready");
 
-        loop {
+        for _index in 0..=100 {
             let mut command = Command::new("docker");
             command.arg("version");
 
             let output = crate::logging::log_command_output(&mut command)?;
 
             if output.status.success() {
-                break;
+                return Ok(());
             }
 
             tracing::debug!("sleep for docker");
             std::thread::sleep(Duration::from_secs(5));
         }
 
-        Ok(())
+        Err(anyhow::anyhow!("Timeout waiting for Docker"))
     }
 
     /// Show an error message and reboot the OS after a countdown
@@ -331,26 +331,32 @@ impl Manager {
         Ok(())
     }
 
-    /// Wait for an internet connection
-    fn wait_for_internet_connection(&self) -> anyhow::Result<()> {
-        tracing::info!("wait for internet connection");
-        self.display_info("Waiting for internet connection");
+    /// Check internet connectivity.
+    ///
+    /// This is intended only as a basic start up check for DNS problems
+    /// and captive portals.
+    fn check_internet_connectivity(&self) -> anyhow::Result<()> {
+        tracing::info!("checking internet connectivity");
+        self.display_info("Checking internet connectivity");
 
-        loop {
-            let mut command = Command::new("ping");
-            command.arg("warriorhq.archiveteam.org").arg("-c").arg("1");
+        for index in 0..=60 {
+            let mut command = Command::new("warrior4-network-check");
 
-            let output = crate::logging::log_command_output(&mut command)?;
+            let status = crate::logging::monitor_command_output(&mut command, |output| {
+                let text = String::from_utf8_lossy(output);
+                self.display_command_output(text);
+            })?;
 
-            if output.status.success() {
-                break;
+            if status.success() {
+                std::thread::sleep(Duration::from_secs(5));
+                return Ok(());
             }
 
-            tracing::debug!("sleep for internet connection");
-            std::thread::sleep(Duration::from_secs(5));
+            tracing::debug!("sleep for check internet connectivity");
+            std::thread::sleep(Duration::from_secs(5 + index * 60));
         }
 
-        Ok(())
+        Err(anyhow::anyhow!("internet connectivity check failed"))
     }
 
     /// Download and an execute a file to modify the system

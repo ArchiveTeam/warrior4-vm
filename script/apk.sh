@@ -17,6 +17,7 @@ mkdir -p $STAGING_DIR/etc
 mkdir -p $STAGING_DIR/etc/init.d
 mkdir -p $STAGING_DIR/usr/bin
 mkdir -p $STAGING_DIR/usr/lib/warrior4-appliance
+mkdir -p $STAGING_DIR/usr/share/warrior4-network-check
 
 echo "Building binaries"
 cargo build --release --target x86_64-unknown-linux-musl
@@ -25,6 +26,7 @@ echo "Copying binaries to staging directory"
 install --preserve-timestamps --mode=755 --verbose \
     target/x86_64-unknown-linux-musl/release/warrior4-appliance \
     target/x86_64-unknown-linux-musl/release/warrior4-appliance-display \
+    target/x86_64-unknown-linux-musl/release/warrior4-network-check \
     $STAGING_DIR/usr/bin/
 
 echo "Copying skeleton files to staging directory"
@@ -40,6 +42,9 @@ install --preserve-timestamps --mode=755 --verbose \
 install --preserve-timestamps --mode=755 --verbose \
     appliance/skeleton/usr/lib/warrior4-appliance/*.sh \
     $STAGING_DIR/usr/lib/warrior4-appliance/
+install --preserve-timestamps --mode=755 --verbose \
+    appliance/skeleton/usr/share/warrior4-network-check/* \
+    $STAGING_DIR/usr/share/warrior4-network-check/
 
 echo "Creating apk"
 fpm -s dir -t apk -p $OUTPUT_DIR/$APK_FILENAME \
