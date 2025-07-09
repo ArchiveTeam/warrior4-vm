@@ -5,7 +5,7 @@ import subprocess
 import os
 
 DOCKER = "docker"
-IMAGE_NAME = "warrior4-vm-ubuntu2202-build-env"
+IMAGE_NAME = "warrior4-vm-ubuntu-build-env"
 CONTAINER_NAME = "warrior4-vm-build-env"
 
 
@@ -50,7 +50,7 @@ def main():
 def init(args):
     print(f"Creating image {IMAGE_NAME}")
     subprocess.run(
-        common_docker_args(args) + ["build", "--tag", IMAGE_NAME, "."], check=True
+        common_docker_args(args) + ["build", "--file", "script/Dockerfile", "--tag", IMAGE_NAME, "."], check=True
     )
 
 
