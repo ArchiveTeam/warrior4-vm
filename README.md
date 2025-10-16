@@ -37,7 +37,7 @@ Here are the suggested defaults:
 
 | Hardware | Value |
 | -------- | ----- |
-| Memory | 512 MB |
+| Memory | 1024 MB |
 | Video memory | 16 MB |
 | 3D graphics | off |
 | CPUs | 1 |
