@@ -1,0 +1,16 @@
+# zram-init config for warrior appliance
+# https://wiki.alpinelinux.org/wiki/Zram
+
+load_on_start=yes
+unload_on_stop=yes
+num_devices=2
+
+type0=swap
+size0=512
+labl0=zram_swap
+
+type1=/tmp
+flag1=ext4
+size1=512
+mode1=1777
+labl1=zram_tmp

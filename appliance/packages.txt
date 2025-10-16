@@ -2,6 +2,7 @@ terminus-font
 chrony
 logrotate
 dnscrypt-proxy
+zram-init
 docker
 open-vm-tools
 open-vm-tools-guestinfo

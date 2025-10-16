@@ -22,6 +22,7 @@ rc-update add crond default
 
 # More system services
 rc-update add consolefont boot
+rc-update add zram-init boot
 rc-update add chronyd default
 rc-update add dnscrypt-proxy default
 

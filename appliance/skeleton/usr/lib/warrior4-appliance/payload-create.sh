@@ -12,7 +12,10 @@ chmod 777 /root/config.json
 # Additionally, the /root/config.json file is mounted inside the Docker container at
 # /home/warrior/projects/config.json, allowing user configuration to be persisted across
 # container deletions and Watchtower updates.
-docker create -p 8001:8001 --name warrior -v /root/config.json:/home/warrior/projects/config.json atdr.meo.ws/archiveteam/warrior-dockerfile
+docker create -p 8001:8001 --name warrior \
+    -v /root/config.json:/home/warrior/projects/config.json \
+    --tmpfs /tmp:size=512m,mode=1777 \
+    atdr.meo.ws/archiveteam/warrior-dockerfile
 
 # Note: docker exec can't be run here because the container is not started
 # Use payload-post-start.sh
