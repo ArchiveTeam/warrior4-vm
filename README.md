@@ -11,7 +11,7 @@ If you want to see the older version 3, see [Ubuntu-Warrior](https://github.com/
 ## Support
 
 * If you need help or troubleshooting information, check the [FAQs](https://wiki.archiveteam.org/index.php/ArchiveTeam_Warrior) or Issues section to see if your problem has been answered already. If you want to to discuss in general, join hackint IRC [#warrior](https://webirc.hackint.org/#irc://irc.hackint.org/#warrior) channel.
-* For bug reports, please file an issue on the Issues section.
+* For bug reports about the virtual machine appliance/image itself, please file an issue on the Issues section. If you have a bug report on the web interface, please use the Issues section on the [seesaw-kit](https://github.com/ArchiveTeam/seesaw-kit/) project.
 
 ### Known issues
 
@@ -51,7 +51,11 @@ When using NAT network type, port forwarding is required to access the web inter
 | ---- | ------------ | --------- | ------------- | ---------- |
 | Web Interface | 127.0.0.1 | 8001 | | 8001 |
 
-## Frequently asked questions
+#### Additional configuration
+
+The virtual machine may reboot to apply updates or refresh itself. If your hypervisor does not support guests issuing a reset command, the virtual machine may stop without restarting. In this case, configure your hypervisor to automatically restart the virtual machine if it stops.
+
+## Frequently asked questions about the VM
 
 **Q. How do I get my keyboard or mouse untrapped in the virtual machine window?**
 
@@ -74,6 +78,10 @@ A. Use the LeftAlt+RightArrow and LeftAlt+LeftArrow keys to switch terminals. Th
 Logging files are placed in `/var/log/`.
 
 Note that you are logged into the VM OS, not the Docker container. Use the Docker tool to log in to the `warrior` container as needed. The container user is `warrior`. Project download data stored in `/data/`.
+
+**Q. My question is not here?**
+
+Please see the full FAQ on the [wiki](https://wiki.archiveteam.org/index.php/ArchiveTeam_Warrior).
 
 ## Developer
 
