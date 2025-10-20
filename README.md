@@ -40,7 +40,7 @@ Here are the suggested defaults:
 | Memory | 1024 MB |
 | Video memory | 16 MB |
 | 3D graphics | off |
-| CPUs | 1 |
+| CPUs | 2 |
 | Network | NAT |
 | USB | off |
 | Audio | off |
