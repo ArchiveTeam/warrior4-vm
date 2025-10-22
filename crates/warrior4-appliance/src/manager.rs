@@ -349,6 +349,7 @@ impl Manager {
 
             if status.success() {
                 std::thread::sleep(Duration::from_secs(5));
+                self.display_command_output("");
                 return Ok(());
             }
 
