@@ -29,7 +29,12 @@
 ## Remove the leading # first to enable this; lines starting with # are ignored.
 
 # server_names = ['scaleway-fr', 'google', 'yandex', 'cloudflare']
-server_names = ['google', 'cloudflare']
+server_names = [
+    #'quad9-dnscrypt-ip4-nofilter-pri',
+    #'quad9-dnscrypt-ip6-nofilter-pri',
+    'quad9-doh-ip4-port443-nofilter-pri',
+    'quad9-doh-ip6-port443-nofilter-pri'
+]
 
 
 ## List of local addresses and ports to listen to. Can be IPv4 and/or IPv6.
@@ -254,7 +259,7 @@ cert_refresh_delay = 240
 ## not be sent there. If you're using DNSCrypt or Anonymized DNS and your
 ## lists are up to date, these resolvers will not even be used.
 
-bootstrap_resolvers = ['9.9.9.11:53', '8.8.8.8:53']
+bootstrap_resolvers = ['9.9.9.11:53', '1.1.1.1:53', '8.8.8.8:53', '114.114.114.114:53']
 
 
 ## When internal DNS resolution is required, for example to retrieve
