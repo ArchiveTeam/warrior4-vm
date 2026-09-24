@@ -1,62 +1,32 @@
-use std::{
-    net::{Ipv4Addr, SocketAddr},
-    ops::Deref,
-    sync::RwLock,
-};
+use std::{net::SocketAddr, sync::Arc};
 
-use dnsclient::sync::DNSClient;
-use ureq::unversioned::resolver::{ResolvedSocketAddrs, Resolver};
-use url::Url;
+use hickory_resolver::TokioResolver;
+use reqwest::dns::{Addrs, Resolve};
 
-/// Adapter for dnsclient to ureq.
+/// Adapter for reqwest to hickory-resolver.
 #[derive(Debug)]
 pub struct DnsClientAdapter {
-    client: RwLock<DNSClient>,
+    client: Arc<TokioResolver>,
 }
 
 impl DnsClientAdapter {
-    pub fn new(client: DNSClient) -> Self {
+    pub fn new(client: TokioResolver) -> Self {
         Self {
-            client: RwLock::new(client),
+            client: Arc::new(client),
         }
     }
 }
 
-impl Resolver for DnsClientAdapter {
-    fn resolve(
-        &self,
-        uri: &ureq::http::Uri,
-        _config: &ureq::config::Config,
-        timeout: ureq::unversioned::transport::NextTimeout,
-    ) -> Result<ResolvedSocketAddrs, ureq::Error> {
-        let mut client = self.client.write().unwrap();
-        client.set_timeout(timeout.after.deref().to_owned());
-
-        let url =
-            Url::parse(&uri.to_string()).map_err(|error| ureq::Error::BadUri(error.to_string()))?;
-
-        let host = url
-            .host_str()
-            .ok_or_else(|| ureq::Error::BadUri("host".to_string()))?;
-        let port = url
-            .port_or_known_default()
-            .ok_or_else(|| ureq::Error::BadUri("port".to_string()))?;
-
-        let addresses = client.query_addrs(host)?;
-
-        if addresses.is_empty() {
-            return Err(ureq::Error::HostNotFound);
-        }
-
-        let mut socket_addresses =
-            ResolvedSocketAddrs::from_fn(|_i| SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 0));
-
-        for address in addresses.iter().take(16) {
-            socket_addresses.push(SocketAddr::new(*address, port));
-        }
-
-        assert!(!socket_addresses.is_empty());
-
-        Ok(socket_addresses)
+impl Resolve for DnsClientAdapter {
+    fn resolve(&self, name: reqwest::dns::Name) -> reqwest::dns::Resolving {
+        let client = self.client.clone();
+        Box::pin(async move {
+            let ip_result = client.lookup_ip(name.as_str()).await?;
+            Ok(Box::new(
+                ip_result
+                    .into_iter()
+                    .map(|ip_addr| SocketAddr::new(ip_addr, 0)),
+            ) as Addrs)
+        })
     }
 }

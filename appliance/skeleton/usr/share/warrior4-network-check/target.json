@@ -1,7 +1,28 @@
 {
-    "bootstrap_dns": ["9.9.9.10", "2620:fe::10"],
-    "nonexistent_url": "http://{random}.network-check.warriorhq.archiveteam.org/",
-    "cleartext_url": "http://warriorhq.archiveteam.org/downloads/network_check/hello.html",
-    "target_url": "https://warriorhq.archiveteam.org/downloads/network_check/hello.html",
-    "content": "<html><head></head><body>Hello.</body></html>\n"
+    "public_dns_resolver": [
+        "9.9.9.9",
+        "1.1.1.1",
+        "8.8.8.8",
+        "208.67.222.222",
+        "77.88.8.8",
+        "114.114.114.114"
+    ],
+    "cleartext_dns_resolver": [
+        "9.9.9.10",
+        "2620:fe::10"
+    ],
+    "encrypted_dns_resolver": [
+        [
+            "9.9.9.10",
+            "dns10.quad9.net."
+        ],
+        [
+            "2620:fe::10",
+            "dns10.quad9.net."
+        ]
+    ],
+    "domain": "warriorhq.archiveteam.org.",
+    "nonexistent_domain": "{random}.network-check.warriorhq.archiveteam.org.",
+    "url": "{protocol}://warriorhq.archiveteam.org/downloads/network_check/hello.html",
+    "url_content": "<html><head></head><body>Hello.</body></html>\n"
 }

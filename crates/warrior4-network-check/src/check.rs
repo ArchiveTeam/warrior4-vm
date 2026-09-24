@@ -1,13 +1,18 @@
-use std::{fmt::Display, net::SocketAddr, time::Duration};
+use std::{fmt::Display, time::Duration};
 
-use dnsclient::{UpstreamServer, sync::DNSClient};
+use hickory_resolver::{
+    TokioResolver,
+    net::{DnsError, NetError},
+    proto::op::ResponseCode,
+};
 use rand::distr::{Alphanumeric, SampleString};
-use ureq::{Agent, unversioned::transport::DefaultConnector};
+use reqwest::Client;
 
 use crate::{adapter::DnsClientAdapter, config::TargetConfig};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub enum TestResult {
+    #[default]
     Incomplete,
     Pass,
     Fail(String),
@@ -17,12 +22,6 @@ pub enum TestResult {
 impl TestResult {
     pub fn is_pass(&self) -> bool {
         matches!(self, Self::Pass)
-    }
-}
-
-impl Default for TestResult {
-    fn default() -> Self {
-        Self::Incomplete
     }
 }
 
@@ -39,99 +38,164 @@ impl Display for TestResult {
 
 #[derive(Debug, Default)]
 pub struct Report {
-    pub nonexistent: TestResult,
-    pub cleartext: TestResult,
-    pub target: TestResult,
+    /// Test of whether we can contact any public resolver.
+    pub public_dns_resolver: TestResult,
+    /// Test of whether our DNS resolver of choice is rejected.
+    pub cleartext_dns_resolver: TestResult,
+    /// Test of whether encrypted connection to a DNS resolver is rejected.
+    pub encrypted_dns_resolver: TestResult,
+    /// Test of the configuration and functionality of the system DNS resolver.
+    pub system_dns_resolver: TestResult,
+    /// Test of whether the network has a redirection service.
+    pub non_existent_domain_cleartext: TestResult,
+    /// Test of whether the system resolver is misconfigured with a redirection service.
+    pub non_existent_domain_system: TestResult,
+    /// Test of whether ISP uses HTML injection.
+    pub cleartext_download: TestResult,
+    /// Test of whether TLS connections are permitted and authentic.
+    pub encrypted_download: TestResult,
 }
 
 impl Report {
     pub fn is_pass(&self) -> bool {
-        self.nonexistent.is_pass() && self.cleartext.is_pass() && self.target.is_pass()
+        self.cleartext_dns_resolver.is_pass()
+            && self.encrypted_dns_resolver.is_pass()
+            && self.system_dns_resolver.is_pass()
+            && self.non_existent_domain_cleartext.is_pass()
+            && self.non_existent_domain_system.is_pass()
+            && self.cleartext_download.is_pass()
+            && self.encrypted_download.is_pass()
     }
 }
 
-pub fn check_network(config: &TargetConfig) -> Result<Report, (Report, std::io::Error)> {
+#[allow(clippy::result_large_err)]
+pub async fn check_network(config: &TargetConfig) -> Result<Report, (Report, std::io::Error)> {
     let mut report = Report::default();
-    let custom_client = Agent::with_parts(
-        Agent::config_builder()
-            .timeout_global(Some(Duration::from_secs(30)))
-            .max_redirects(0)
-            .build(),
-        DefaultConnector::new(),
-        DnsClientAdapter::new(custom_dns_client(config)),
-    );
-    let system_client = Agent::config_builder()
-        .timeout_global(Some(Duration::from_secs(30)))
-        .max_redirects(0)
-        .build()
-        .new_agent();
+    let public_dns_resolver = crate::builder::build_custom_public_dns_resolver(config);
+    let cleartext_dns_resolver = crate::builder::build_custom_cleartext_dns_resolver(config);
+    let encrypted_dns_resolver = crate::builder::build_custom_encrypted_dns_resolver(config);
+    let system_dns_resolver = crate::builder::build_system_dns_resolver();
+    let domain = &config.domain;
+    let nonexistent_domain = format_random_domain(&config.nonexistent_domain);
+    let cleartext_url = config.url.replace("{protocol}", "http");
+    let encrypted_url = config.url.replace("{protocol}", "https");
 
-    let url = format_random_domain(&config.nonexistent_url);
-    eprint!("Check nonexistent resource ({url}) ... ");
-    let result = check_nonexistent(&custom_client, &url);
-    eprintln!("{result}");
-    report.nonexistent = result;
+    eprintln!("Testing DNS resolver ({domain}):");
 
-    let url = &config.cleartext_url;
-    eprint!("Check cleartext resource ({url}) ... ");
-    let result = check_content(&custom_client, url, &config.content);
+    eprint!("  Public ... ");
+    let result = check_dns_resolver(&public_dns_resolver, domain).await;
     eprintln!("{result}");
-    report.cleartext = result;
+    report.public_dns_resolver = result;
 
-    let url = &config.target_url;
-    eprint!("Check target resource ({url}) ... ");
-    let result = check_content(&system_client, url, &config.content);
+    eprint!("  Cleartext ... ");
+    let result = check_dns_resolver(&cleartext_dns_resolver, domain).await;
     eprintln!("{result}");
-    report.target = result;
+    report.cleartext_dns_resolver = result;
+
+    eprint!("  Encrypted ... ");
+    let result = check_dns_resolver(&encrypted_dns_resolver, domain).await;
+    eprintln!("{result}");
+    report.encrypted_dns_resolver = result;
+
+    eprint!("  System... ");
+    let result = check_dns_resolver(&system_dns_resolver, domain).await;
+    eprintln!("{result}");
+    report.system_dns_resolver = result;
+
+    eprintln!("Testing DNS resolver (non-existent {nonexistent_domain}):");
+
+    eprint!("  Cleartext ... ");
+    let result = check_dns_resolver_nx_domain(&cleartext_dns_resolver, &nonexistent_domain).await;
+    eprintln!("{result}");
+    report.non_existent_domain_cleartext = result;
+
+    eprint!("  System ... ");
+    let result = check_dns_resolver_nx_domain(&system_dns_resolver, &nonexistent_domain).await;
+    eprintln!("{result}");
+    report.non_existent_domain_system = result;
+
+    eprintln!("Checking web page download ({cleartext_url}):");
+
+    eprint!("  Cleartext ... ");
+    let result = check_download(
+        cleartext_dns_resolver.clone(),
+        &cleartext_url,
+        &config.url_content,
+    )
+    .await;
+    eprintln!("{result}");
+    report.cleartext_download = result;
+
+    eprint!("  Encrypted ... ");
+    let result = check_download(
+        cleartext_dns_resolver.clone(),
+        &encrypted_url,
+        &config.url_content,
+    )
+    .await;
+    eprintln!("{result}");
+    report.encrypted_download = result;
 
     Ok(report)
 }
 
-fn custom_dns_client(config: &TargetConfig) -> DNSClient {
-    let servers = config
-        .bootstrap_dns
-        .iter()
-        .map(|i| UpstreamServer::new(SocketAddr::new(*i, 53)))
-        .collect();
-
-    DNSClient::new(servers)
-}
-
+/// Generate a random domain name using a template.
 fn format_random_domain(template: &str) -> String {
     let chars = Alphanumeric.sample_string(&mut rand::rng(), 16);
     template.replace("{random}", &chars)
 }
 
-fn check_nonexistent(client: &Agent, url: &str) -> TestResult {
-    let url = format_random_domain(url);
+/// Check whether the domain can be resolved with the given resolver.
+async fn check_dns_resolver(resolver: &TokioResolver, domain: &str) -> TestResult {
+    let result = resolver.lookup_ip(domain).await;
 
-    match client.get(&url).call() {
-        Ok(_response) => TestResult::Fail("unexpected response".to_string()),
+    match result {
+        Ok(_) => TestResult::Pass,
         Err(error) => match error {
-            ureq::Error::HostNotFound => TestResult::Pass,
-
+            NetError::Dns(dns_error) => TestResult::Fail(dns_error.to_string()),
             _ => TestResult::Error(Box::new(error)),
         },
     }
 }
 
-fn check_content(client: &Agent, url: &str, expected_content: &str) -> TestResult {
-    match client.get(url).call() {
-        Ok(mut response) => {
-            if response.status() != 200 {
-                return TestResult::Fail(format!("unexpected status code {}", response.status()));
-            }
+/// Check whether the domain does not exist with the given resolver.
+async fn check_dns_resolver_nx_domain(resolver: &TokioResolver, domain: &str) -> TestResult {
+    let result = resolver.lookup_ip(domain).await;
 
-            let content = response.body_mut().read_to_vec().unwrap_or_default();
+    match result {
+        Ok(ip_addr) => TestResult::Fail(format!("{ip_addr:?}")),
+        Err(NetError::Dns(DnsError::ResponseCode(ResponseCode::NXDomain)))
+        | Err(NetError::Dns(DnsError::NoRecordsFound(_))) => TestResult::Pass,
+        Err(error) => TestResult::Error(Box::new(error)),
+    }
+}
 
-            if content != expected_content.as_bytes() {
+/// Check whether the downloaded file matches the expected string.
+async fn check_download(resolver: TokioResolver, url: &str, expected_content: &str) -> TestResult {
+    let adapter = DnsClientAdapter::new(resolver);
+    let client = Client::builder()
+        .timeout(Duration::from_secs(60))
+        .dns_resolver(adapter)
+        .build()
+        .unwrap();
+
+    let result = client.get(url).send().await;
+
+    match result {
+        Ok(response) if response.status().is_success() => {
+            let content = response.bytes().await.unwrap_or_default();
+
+            if content == expected_content {
+                TestResult::Pass
+            } else {
                 let mut snippet = content.escape_ascii().to_string();
                 snippet.truncate(64);
-
                 TestResult::Fail(format!("unexpected content '{snippet}'",))
-            } else {
-                TestResult::Pass
             }
+        }
+        Ok(response) => {
+            let status_code = response.status().as_u16();
+            TestResult::Error(format!("unexpected status code '{status_code}'").into())
         }
         Err(error) => TestResult::Error(Box::new(error)),
     }

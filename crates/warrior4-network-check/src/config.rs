@@ -2,14 +2,23 @@ use std::{net::IpAddr, path::Path};
 
 use serde::Deserialize;
 
-/// target.json config object
+/// target.json config object.
 #[derive(Deserialize)]
 pub struct TargetConfig {
-    pub bootstrap_dns: Vec<IpAddr>,
-    pub nonexistent_url: String,
-    pub cleartext_url: String,
-    pub target_url: String,
-    pub content: String,
+    /// Popular public DNS resolvers around the world for basic test.
+    pub public_dns_resolver: Vec<IpAddr>,
+    /// IP addresses of DNS resolvers that ArchiveTeam uses.
+    pub cleartext_dns_resolver: Vec<IpAddr>,
+    /// The second item is the domain name for DNS-over-TLS.
+    pub encrypted_dns_resolver: Vec<(IpAddr, String)>,
+    /// A valid domain name.
+    pub domain: String,
+    /// An invalid domain name template.
+    pub nonexistent_domain: String,
+    /// The URL template to a HTML download.
+    pub url: String,
+    /// The contents of the HTML file.
+    pub url_content: String,
 }
 
 /// Deserialize the config from the given path.
