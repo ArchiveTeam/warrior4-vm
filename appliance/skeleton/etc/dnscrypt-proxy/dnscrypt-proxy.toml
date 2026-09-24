@@ -259,7 +259,15 @@ cert_refresh_delay = 240
 ## not be sent there. If you're using DNSCrypt or Anonymized DNS and your
 ## lists are up to date, these resolvers will not even be used.
 
-bootstrap_resolvers = ['9.9.9.11:53', '1.1.1.1:53', '8.8.8.8:53', '114.114.114.114:53']
+# Google, Quad9, Cloudflare, OpenDNS, Yandex, 114dns
+bootstrap_resolvers = [
+    '8.8.8.8:53',
+    '9.9.9.9:53',
+    '1.1.1.1:53',
+    '208.67.222.222:53',
+    '77.88.8.8:53',
+    '114.114.114.114:53'
+]
 
 
 ## When internal DNS resolution is required, for example to retrieve
