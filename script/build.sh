@@ -32,6 +32,7 @@ echo "Copying skeleton files to staging directory"
 
 echo "Creating Alpine disk image"
 sudo $LIB_DIR/alpine-make-vm-image/alpine-make-vm-image \
+    --branch v3.22 \
     --image-format qcow2 \
     --image-size 60G \
     --fs-skel-dir $STAGING_DIR \
